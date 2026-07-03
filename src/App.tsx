@@ -165,6 +165,9 @@ export default function App() {
       }
 
       if (!parsedData) {
+        if (responseText && (responseText.includes("⚠️") || responseText.includes("오류") || responseText.includes("실패") || responseText.includes("번역"))) {
+          throw new Error(responseText);
+        }
         throw new Error("서버로부터 올바르지 않은 응답이 반환되었습니다.");
       }
 
@@ -471,7 +474,12 @@ export default function App() {
                     </div>
                   </div>
 
-                  {error.includes("GEMINI_API_KEY") && (
+                  {(error.toUpperCase().includes("GEMINI") || 
+                    error.toUpperCase().includes("API") || 
+                    error.toUpperCase().includes("KEY") || 
+                    error.toUpperCase().includes("CREDENTIAL") || 
+                    error.toUpperCase().includes("FORBIDDEN") || 
+                    error.toUpperCase().includes("UNAUTHORIZED")) && (
                     <div className="bg-white border border-red-200 rounded-lg p-4 text-xs text-stone-700 space-y-3 shadow-xs">
                       <p className="font-bold text-stone-900 flex items-center gap-1.5">
                         💡 GEMINI_API_KEY 설정 방법 가이드
@@ -509,7 +517,7 @@ export default function App() {
                     >
                       다시 시도하기
                     </button>
-                    {error.includes("GEMINI_API_KEY") && (
+                    {(error.toUpperCase().includes("GEMINI") || error.toUpperCase().includes("KEY") || error.toUpperCase().includes("API")) && (
                       <a 
                         href="https://aistudio.google.com/apikey" 
                         target="_blank" 
