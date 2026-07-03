@@ -142,9 +142,24 @@ async function startServer() {
 
   app.use(express.json());
 
+  function getDeepLLangCode(lang: string): string | null {
+    const l = lang.toLowerCase();
+    if (l.includes("korean") || l.includes("ko")) return "KO";
+    if (l.includes("japanese") || l.includes("ja")) return "JA";
+    if (l.includes("chinese simplified")) return "ZH";
+    if (l.includes("chinese traditional")) return "ZH";
+    if (l.includes("chinese") || l.includes("zh")) return "ZH";
+    if (l.includes("spanish") || l.includes("es")) return "ES";
+    if (l.includes("german") || l.includes("de")) return "DE";
+    if (l.includes("french") || l.includes("fr")) return "FR";
+    if (l.includes("portuguese") || l.includes("pt")) return "PT";
+    if (l.includes("english") || l.includes("en")) return "EN";
+    return null;
+  }
+
   // Shared helper function to do the translation and analysis
-  async function translateAndAnalyzeCore(text: string, mode: string = "balanced") {
-    console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}`);
+  async function translateAndAnalyzeCore(text: string, mode: string = "balanced", targetLang: string = "Korean") {
+    console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}, Target Language: ${targetLang}`);
     
     const apiKey = getCleanEnv("GEMINI_API_KEY");
     if (!apiKey) {
@@ -156,9 +171,10 @@ async function startServer() {
     let deeplTranslation: string | null = null;
     let deeplError: string | null = null;
     const deeplKey = getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
+    const deeplLangCode = getDeepLLangCode(targetLang);
 
-    if (deeplKey) {
-      console.log("[Translate API] Found DeepL API Key. Initializing DeepL request...");
+    if (deeplKey && deeplLangCode) {
+      console.log(`[Translate API] Found DeepL API Key. Initializing DeepL request for ${targetLang} (${deeplLangCode})...`);
       try {
         const isFree = deeplKey.endsWith(":fx");
         const deeplUrl = isFree 
@@ -182,7 +198,7 @@ async function startServer() {
           },
           body: JSON.stringify({
             text: [text],
-            target_lang: "KO"
+            target_lang: deeplLangCode
           }),
           signal: controller.signal
         });
@@ -222,17 +238,20 @@ async function startServer() {
 
     // Formulate custom system instructions based on study mode
     let systemInstruction = `You are an expert biblical translator, theologian, and biblical languages scholar (Greek and Hebrew). 
-Your task is to translate theological, biblical, or commentary text from English to Korean.
-Analyze the source text carefully to provide the most contextually accurate and elegant Korean translation.
-For biblical verses or theological commentary, maintain standard Korean Christian terminology (such as '하나님', '예수 그리스도', '구원', '은혜', '성경', etc.) unless the literary context suggests a broader translation.
-Provide deep, high-fidelity theological analysis and explain key terms, including their Greek/Hebrew roots, transliterations, and specific nuances in this passage.`;
+Your task is to translate theological, biblical, or commentary text from English to ${targetLang}.
+Analyze the source text carefully to provide the most contextually accurate and elegant translation into ${targetLang}.
+For biblical verses or theological commentary, maintain standard Christian terminology in ${targetLang} unless the literary context suggests a broader translation.
+Provide deep, high-fidelity theological analysis and explain key terms, including their Greek/Hebrew roots, transliterations, and specific nuances in this passage.
+All explanations, insights, and meanings MUST be written in the selected target language (${targetLang}) to serve a reader who understands ${targetLang}.
+
+CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifies property names like 'koreanMeaning', 'korean', and 'koreanText', you MUST write their values in the requested target language (${targetLang}) instead of Korean! Do NOT change the JSON key names, only translate the values inside them.`;
 
     if (mode === "scholarly") {
-      systemInstruction += "\nFocus on high-level scholarly parsing, original languages (Greek/Hebrew word studies), and academic theological insights.";
+      systemInstruction += `\nFocus on high-level scholarly parsing, original languages (Greek/Hebrew word studies), and academic theological insights, written entirely in ${targetLang}.`;
     } else if (mode === "devotional") {
-      systemInstruction += "\nFocus on warm, pastoral, devotional application, clear and accessible Korean translation, and practical spiritual insights.";
+      systemInstruction += `\nFocus on warm, pastoral, devotional application, clear and accessible ${targetLang} translation, and practical spiritual insights, written entirely in ${targetLang}.`;
     } else {
-      systemInstruction += "\nFocus on a balanced, precise literary translation and clear structural side-by-side parsing.";
+      systemInstruction += `\nFocus on a balanced, precise literary translation and clear structural side-by-side parsing, written entirely in ${targetLang}.`;
     }
 
     let prompt = `Please translate and analyze the following text:
@@ -250,7 +269,7 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
       properties: {
         originalText: { type: Type.STRING },
         translation: { type: Type.STRING },
-        theologicalInsights: { type: Type.STRING, description: "Deep theological commentary, historical context, and explanation of this passage" },
+        theologicalInsights: { type: Type.STRING, description: `Deep theological commentary, historical context, and explanation of this passage in ${targetLang}` },
         words: {
           type: Type.ARRAY,
           items: {
@@ -259,8 +278,8 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
               word: { type: Type.STRING, description: "The English word or phrase being analyzed" },
               originalLanguage: { type: Type.STRING, description: "Greek or Hebrew term if applicable (e.g. 'ἀγάπη' or 'חֶסֶ드'), otherwise empty" },
               transliteration: { type: Type.STRING, description: "Transliteration of the root word (e.g. 'agape' or 'chesed')" },
-              koreanMeaning: { type: Type.STRING, description: "Korean translation or equivalent theological term" },
-              explanation: { type: Type.STRING, description: "Grammatical nuance, dictionary meaning, or context-specific nuance in this passage" }
+              koreanMeaning: { type: Type.STRING, description: `The meaning of the word/phrase translated into ${targetLang}` },
+              explanation: { type: Type.STRING, description: `Grammatical nuance, dictionary meaning, or context-specific nuance in this passage in ${targetLang}` }
             },
             required: ["word", "koreanMeaning"]
           },
@@ -272,7 +291,7 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
             type: Type.OBJECT,
             properties: {
               english: { type: Type.STRING, description: "The English sentence or distinct phrase" },
-              korean: { type: Type.STRING, description: "The translated Korean sentence or distinct phrase" }
+              korean: { type: Type.STRING, description: `The translated sentence or distinct phrase in ${targetLang}` }
             },
             required: ["english", "korean"]
           },
@@ -285,11 +304,11 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
             properties: {
               citation: { type: Type.STRING, description: "Bible verse citation (e.g., Romans 5:8)" },
               englishText: { type: Type.STRING, description: "English text of the cross-reference" },
-              koreanText: { type: Type.STRING, description: "Korean translated text or official translation of the cross-reference" }
+              koreanText: { type: Type.STRING, description: `Translated text or official translation of the cross-reference in ${targetLang}` }
             },
             required: ["citation", "koreanText"]
           },
-          description: "2-3 highly relevant biblical cross-references that support the theological themes of the text"
+          description: `2-3 highly relevant biblical cross-references that support the theological themes of the text, with text translated into ${targetLang}`
         }
       },
       required: ["originalText", "translation", "theologicalInsights", "words", "sentences"]
@@ -399,12 +418,12 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
   // API route for translation and theological analysis (JSON Response)
   app.post("/api/translate", async (req, res) => {
     try {
-      const { text, mode } = req.body;
+      const { text, mode, targetLang } = req.body;
       if (!text || typeof text !== "string") {
         return res.status(400).json({ error: "Text is required" });
       }
 
-      const result = await translateAndAnalyzeCore(text, mode);
+      const result = await translateAndAnalyzeCore(text, mode, targetLang || "Korean");
       res.json(result);
     } catch (error: any) {
       console.error("Translation API Error:", error);
@@ -461,6 +480,7 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
     try {
       const text = (req.body.text || req.query.text) as string;
       const mode = (req.body.mode || req.query.mode || "balanced") as string;
+      const targetLang = (req.body.targetLang || req.query.targetLang || req.body.target_lang || req.query.target_lang || "Korean") as string;
 
       if (!text || typeof text !== "string" || !text.trim()) {
         if (isHtml) {
@@ -584,10 +604,6 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
         lines.push("   [클립보드] (또는 '클립보드 콘텐츠')로 선택해 주시면 마우스 드래그와");
         lines.push("   복사(Cmd+C)를 모두 스마트하게 자동 인식하여 가장 완벽하게 작동합니다.");
         lines.push("");
-        lines.push("3. 브라우저(번역 동반자 홈 화면)에서 직접 입력");
-        lines.push("   서버 메인 화면에 접속하여 입력창에 직접 원문을 붙여넣고");
-        lines.push("   '신학적 대조 번역 실행' 버튼을 누르셔도 동일하게 확인 가능합니다.");
-        lines.push("");
         lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         return res.status(200).send(lines.join("\n"));
       }
@@ -596,9 +612,10 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
       let deeplTranslation: string | null = null;
       let usedDeepL = false;
       const deeplKey = getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
+      const deeplLangCode = getDeepLLangCode(targetLang);
 
-      if (deeplKey) {
-        console.log("[Fast Route] Found DeepL key. Querying DeepL translation...");
+      if (deeplKey && deeplLangCode) {
+        console.log(`[Fast Route] Found DeepL key. Querying DeepL translation for ${targetLang} (${deeplLangCode})...`);
         try {
           const isFree = deeplKey.endsWith(":fx");
           const deeplUrl = isFree 
@@ -616,7 +633,7 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
             },
             body: JSON.stringify({
               text: [text],
-              target_lang: "KO"
+              target_lang: deeplLangCode
             }),
             signal: controller.signal
           });
@@ -641,10 +658,10 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
 
       if (usedDeepL && deeplTranslation) {
         translationResult = deeplTranslation;
-        engineName = "DeepL 고정밀 초고속 번역";
+        engineName = `DeepL 고정밀 초고속 번역 (${targetLang})`;
       } else {
         // Fallback to simple Gemini translation if DeepL is not available or failed
-        console.log("[Fast Route] DeepL is not available or failed. Using fast Gemini translation...");
+        console.log(`[Fast Route] DeepL is not available or failed. Using fast Gemini translation into ${targetLang}...`);
         const apiKey = getCleanEnv("GEMINI_API_KEY");
         if (!apiKey) {
           throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 브라우저 우측 상단 Settings 메뉴의 Secrets 패널에서 GEMINI_API_KEY를 등록해 주세요.");
@@ -660,9 +677,9 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
         });
 
         const fastPrompt = `You are an expert biblical translator and Christian literature scholar. 
-Translate the following English theological/commentary/biblical text into highly accurate, natural, and elegant Korean.
-Maintain standard Korean Christian terminology (e.g., '하나님', '예수 그리스도', '은혜' 등).
-Do NOT include any introduction, explanations, metadata, markdown backticks, or notes. Return ONLY the translated Korean text.
+Translate the following English theological/commentary/biblical text into highly accurate, natural, and elegant ${targetLang}.
+Maintain standard Christian terminology in ${targetLang} (e.g., if ${targetLang} is Korean, use '하나님', '예수 그리스도', '은혜' 등).
+Do NOT include any introduction, explanations, metadata, markdown backticks, or notes. Return ONLY the translated ${targetLang} text.
 
 Text to translate:
 "${text}"`;
@@ -679,7 +696,7 @@ Text to translate:
         );
 
         translationResult = response?.text || "";
-        engineName = "Gemini 초고속 신학 번역";
+        engineName = `Gemini 초고속 신학 번역 (${targetLang})`;
       }
 
       if (isHtml) {
@@ -839,7 +856,7 @@ Text to translate:
       <div class="subtitle">FAST MODE</div>
     </div>
 
-    <div class="section-title">Logos 영어 원문</div>
+    <div class="section-title">Logos English Original</div>
     <div class="text-box original" id="originalText">${escapeHtml(text)}</div>
 
     <div class="section-title">${escapeHtml(engineName)}</div>
@@ -848,21 +865,21 @@ Text to translate:
     <div class="button-group">
       <button class="btn btn-primary" onclick="copyTranslation()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-        번역만 복사
+        Copy Translation
       </button>
       <button class="btn btn-secondary" onclick="copyAll()">
-        전체 카드 복사
+        Copy Full Card
       </button>
-      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">닫기</button>
+      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">Close</button>
     </div>
 
     <div class="footer">
-      ⚡️ 팝업 단축키용 초고속 직역 모드로 실행되었습니다.<br>
-      상세 분석/원어 연구는 번역 동반자 브라우저 앱을 이용해 주세요.
+      ⚡️ Running in high-speed popup mode via system shortcut.<br>
+      For deep tabbed analysis and lexicon entries, use the full Companion browser app.
     </div>
   </div>
 
-  <div id="toast" class="toast">클립보드에 복사되었습니다!</div>
+  <div id="toast" class="toast">Copied to clipboard!</div>
 
   <script>
     function showToast(msg) {
@@ -877,20 +894,20 @@ Text to translate:
     function copyTranslation() {
       const text = document.getElementById('translationText').innerText;
       navigator.clipboard.writeText(text).then(() => {
-        showToast('번역문이 클립보드에 복사되었습니다!');
+        showToast('Translation copied to clipboard!');
       }).catch(err => {
-        alert('복사에 실패했습니다: ' + err);
+        alert('Copy failed: ' + err);
       });
     }
 
     function copyAll() {
       const orig = document.getElementById('originalText').innerText;
       const trans = document.getElementById('translationText').innerText;
-      const fullText = "[ Logos 영어 원문 ]\\n" + orig + "\\n\\n[ ${engineName} ]\\n" + trans;
+      const fullText = "[ Logos English Original ]\\n" + orig + "\\n\\n[ ${engineName} ]\\n" + trans;
       navigator.clipboard.writeText(fullText).then(() => {
-        showToast('전체 카드가 복사되었습니다!');
+        showToast('Full card copied to clipboard!');
       }).catch(err => {
-        alert('복사에 실패했습니다: ' + err);
+        alert('Copy failed: ' + err);
       });
     }
   </script>
@@ -905,16 +922,16 @@ Text to translate:
       lines.push("📖 LOGOS TRANSLATION COMPANION (FAST)");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       lines.push("");
-      lines.push("[ Logos 영어 원문 ]");
+      lines.push("[ Logos English Original ]");
       lines.push(`"${text.trim()}"`);
       lines.push("");
       lines.push(`[ ${engineName} ]`);
       lines.push(translationResult.trim());
       lines.push("");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      lines.push("⚡️ 팝업 단축키용 초고속 직역 모드로 실행되었습니다.");
-      lines.push("💡 상세 신학 분석, 원어 연구, 대조 주해 및 교차 구절은");
-      lines.push("   번역 동반자 웹 브라우저 앱에서 실시간으로 확인해 보세요!");
+      lines.push("⚡️ Running in high-speed popup mode via system shortcut.");
+      lines.push("💡 For deep theological commentary, lexicons, and cross-references,");
+      lines.push("   visit the interactive Companion browser workspace!");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
       // Set content type as plain text with UTF-8 encoding
@@ -926,11 +943,11 @@ Text to translate:
       if (isHtml) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         const errorHtml = `<!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>오류 발생</title>
+  <title>Error Occurred</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -996,9 +1013,9 @@ Text to translate:
 </head>
 <body>
   <div class="card">
-    <div class="title">⚠️ [신학 번역 오류 발생]</div>
+    <div class="title">⚠️ [Theological Translation Error]</div>
     <div class="error-box">${escapeHtml(error?.message || String(error))}</div>
-    <button class="btn" onclick="window.close()">닫기</button>
+    <button class="btn" onclick="window.close()">Close</button>
   </div>
 </body>
 </html>`;
@@ -1007,7 +1024,7 @@ Text to translate:
 
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       // Return 200 OK so macOS Shortcuts "Get Contents of URL" always succeeds and can display a friendly formatted error card instead of crashing/hanging
-      res.status(200).send(`⚠️ [신학 번역 오류 발생]\n\n번역 및 분석에 실패하였습니다.\n\n상세 정보: ${error?.message || "Unknown error"}\n\n도움말:\n1. 이 브라우저의 Settings > Secrets 패널에 GEMINI_API_KEY가 등록되어 있는지 꼭 확인해 주세요.\n2. 현재 구글 Gemini 서버가 일시적으로 지연되고 있을 수 있으니, 잠시 후 다시 시도해 주세요.`);
+      res.status(200).send(`⚠️ [Theological Translation Error]\n\nTranslation and analysis failed.\n\nDetails: ${error?.message || "Unknown error"}\n\nHelp:\n1. Verify that GEMINI_API_KEY is correctly set in the Settings > Secrets tab.\n2. Google Gemini servers might be temporarily busy. Please try again shortly.`);
     }
   };
 

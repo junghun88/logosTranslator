@@ -25,104 +25,103 @@ export default function MacShortcutGuide() {
 
   const nativeSteps = [
     {
-      title: "1. macOS 단축어 앱 실행 & 만들기",
-      description: "Mac에서 기본 제공되는 '단축어(Shortcuts)' 앱을 실행하고 새로운 자동화 단축키를 설계합니다.",
+      title: "1. Open macOS Shortcuts App",
+      description: "Launch the native macOS 'Shortcuts' app to design a new one-click translation automation.",
       icon: Compass,
       instructions: [
-        "Spotlight(Cmd + Space)를 켜고 '단축어'를 검색하여 열어줍니다.",
-        "우측 상단의 '+' 아이콘을 클릭하여 새로운 단축어를 만듭니다.",
-        "단축어 이름을 'Logos 팝업 번역기' 또는 원하는 이름으로 설정합니다."
+        "Open Spotlight (Cmd + Space), search for 'Shortcuts' and open it.",
+        "Click the '+' icon in the upper right corner to create a new shortcut.",
+        "Rename the shortcut to 'Logos Translator' or any name you prefer."
       ],
-      imageTip: "단축어 앱은 macOS Monterey 이상에서 무료 기본 탑재되어 있습니다."
+      imageTip: "The Shortcuts app is pre-installed for free on macOS Monterey and later."
     },
     {
-      title: "2. 빠른 동작(Quick Action) 및 클립보드 백업 설정",
-      description: "Logos 성경 앱 특성상 드래그된 본문 정보가 macOS로 잘 들어오지 않는 경우를 대비해 100% 정상 작동하는 백업 설정을 추가합니다.",
+      title: "2. Set as Quick Action & Clipboard Fallback",
+      description: "Enable the services menu integration and set up a reliable clipboard fallback in case Logos doesn't pass the dragged text directly.",
       icon: Settings,
       instructions: [
-        "우측 상단 탭에서 '단축어 세부사항(슬라이더/아이콘 모양 버튼)'을 클릭합니다.",
-        "'빠른 동작으로 사용' 및 '서비스 메뉴' 항목을 체크하여 활성화합니다.",
-        "이후 단축어 편집창 최상단에 생성되는 첫 번째 액션 블록의 입력 조건 설정으로 이동합니다.",
-        "「다음에서 [텍스트] 입력받기」 문구 오른쪽 끝에 있는 '(선택사항이 없는 경우)' 부분을 클릭합니다.",
-        "목록 중에서 '클립보드 가져오기' 대신 ➔ **[클립보드]** (또는 '클립보드 콘텐츠') 항목을 선택해 줍니다!"
+        "Click 'Shortcut Details' (the toggle settings/slider icon button in the top right panel).",
+        "Check the boxes for 'Use as Quick Action' and 'Services Menu' to activate.",
+        "Go back to the main editor and select the first input action block: 'Receive [Text] from [Quick Actions]'.",
+        "Click the text '(if there's no input)' at the end of that first action block.",
+        "Select **[Clipboard]** (or 'Clipboard contents') from the dropdown options as the fallback!"
       ],
-      imageTip: "이렇게 세팅하면, 드래그가 인식이 안 될 때 복사(Cmd+C)한 후 단축키(Cmd+Option+Shift+T)만 누르면 백업 작동으로 완벽히 번역됩니다."
+      imageTip: "With this setup, if dragging fails, simply copy the text (Cmd+C) and press your keyboard shortcut to run the translation instantly."
     },
     {
-      title: "3. 번역 API URL 동작 생성",
-      description: "드래그한 구절을 초고속으로 번역하여 팝업창으로 변환해주는 API 서버 주소를 등록합니다.",
+      title: "3. Add URL Action Block",
+      description: "Register the API server URL that handles high-speed translations and generates the visual popup cards.",
       icon: Cpu,
       instructions: [
-        "오른쪽 검색창에서 'URL' 작업을 검색하여 왼쪽 편집창으로 드래그해 놓습니다.",
-        "URL 입력창에 아래에 있는 'API 번역 주소 (웹 팝업 모드 주소)'를 복사하여 붙여넣습니다.",
-        "주소 맨 끝 부분에 마우스 우클릭을 하거나 삽입 메뉴에서 '단축어 입력' (Shortcut Input) 변수를 연결해 줍니다."
+        "Search for 'URL' in the right-hand actions library and drag it into the editor.",
+        "In the URL input field, copy and paste the 'API Translation URL' shown at the bottom of this guide.",
+        "Right-click at the very end of the URL and insert the 'Shortcut Input' variable."
       ],
-      imageTip: "완성 주소 형태: " + appUrl + "/api/translate-text?html=true&text=[단축어 입력]"
+      imageTip: "Final URL format: " + appUrl + "/api/translate-text?html=true&text=[Shortcut Input]"
     },
     {
-      title: "4. 팝업창 띄우기 및 편리한 복사 설정 (선택)",
-      description: "인터랙티브 복사 버튼이 달린 아름다운 웹 팝업창을 띄우거나, 자동으로 클립보드에 복사되는 텍스트 팝업창을 구성합니다.",
+      title: "4. Display Web Popup Card",
+      description: "Configure the popup window to display an interactive card with instant Copy buttons.",
       icon: Sparkles,
       instructions: [
-        "🎯 [선택 A: 복사 버튼이 있는 웹 팝업 모드 - 강력 추천 ⭐️]",
-        "1. 우측 검색창에서 '웹 페이지 보기' (Show Web Page) 또는 '사파리 웹 보기' 작업을 검색해서 추가합니다.",
-        "2. 입력값으로 방금 만든 'URL' 블록을 연결해 줍니다.",
-        "3. 이제 단축키를 누르면 아름다운 팝업창과 함께 [번역만 복사] 및 [전체 카드 복사] 버튼이 활성화되어 클릭 한 번으로 간편하게 복사할 수 있습니다!",
+        "🎯 [Option A: Web Popup Mode - Highly Recommended ⭐️]",
+        "1. Search for 'Show Web Page' or 'Show Web Page in Safari' in the actions panel and add it.",
+        "2. Map the 'URL' block you created in Step 3 as the input.",
+        "3. Now, pressing the shortcut triggers an elegant overlay with dedicated buttons to copy individual components.",
         "",
-        "📝 [선택 B: 자동으로 클립보드에 저장되는 일반 텍스트 팝업 모드]",
-        "1. 우측 검색창에서 'URL 콘텐츠 가져오기' (Get Contents of URL) 작업을 배치합니다.",
-        "2. 그 바로 밑에 '클립보드에 복사' (Copy to Clipboard) 작업을 추가하여 배치합니다.",
-        "3. 맨 밑에 '결과 보기' (Show Result) 작업을 배치하여 연달아 연결합니다."
+        "📝 [Option B: Silent Text Overlay]",
+        "1. Search for 'Get Contents of URL' and add it.",
+        "2. Follow it with a 'Copy to Clipboard' action block.",
+        "3. Complete with a 'Show Result' action block."
       ],
-      imageTip: "웹 팝업 모드(선택 A)를 사용하시면 로고스 성경 본문 위에 둥근 모서리의 예쁜 미니 브라우저 창과 함께 전용 복사 버튼들이 나타납니다."
+      imageTip: "Using Web Popup Mode (Option A) opens a beautiful, floating window with rounded corners right on top of your Logos Bible workspace."
     },
     {
-      title: "5. Cmd + Option + Shift + T 단축키 연결",
-      description: "Logos 성경을 보던 도중 드래그한 다음 언제든 바로 호출할 수 있도록 단축키를 매핑합니다.",
+      title: "5. Map Keyboard Shortcut (Cmd + Option + Shift + T)",
+      description: "Map a global hotkey to translate selected texts instantly while reading in Logos.",
       icon: Keyboard,
       instructions: [
-        "다시 오른쪽의 단축어 세부사항 패널로 이동합니다.",
-        "'키보드 단축키 추가' 버튼을 누르고 키보드에서 Cmd + Option + Shift + T 키를 눌러 등록합니다.",
-        "이제 단축어 편집창을 닫으셔도 완료됩니다!"
+        "Return to the 'Shortcut Details' panel on the right side.",
+        "Click 'Add Keyboard Shortcut' and press 'Cmd + Option + Shift + T' on your keyboard.",
+        "Close the Shortcuts editor—your setup is now complete!"
       ],
-      imageTip: "로고스 성경 본문을 마우스로 드래그하고 Cmd + Option + Shift + T만 누르면 1초 만에 팝업창이 떠오릅니다."
+      imageTip: "Select any text in Logos and press Cmd + Option + Shift + T to see the translation in under a second."
     }
   ];
 
   const browserSteps = [
     {
-      title: "1. 단축어 만들기 & 클립보드 백업 세팅",
-      description: "Logos에서 드래그하거나 복사(Cmd+C)한 텍스트 정보를 브라우저 앱으로 실시간 전송하기 위해 뼈대를 구축하고 백업 설정을 마칩니다.",
+      title: "1. Create Shortcut & Enable Clipboard",
+      description: "Establish the basic shortcut framework to transmit copied text safely from Logos to your web browser.",
       icon: Compass,
       instructions: [
-        "macOS '단축어' 앱을 열고 상단 '+'를 클릭하여 새 단축키를 생성합니다.",
-        "우측 패널에서 '빠른 동작으로 사용' 및 '서비스 메뉴' 항목을 체크하여 활성화합니다.",
-        "단축어 맨 위의 첫 번째 작업 블록인 「다음에서 [텍스트] 입력받기」 문구 우측의 '(선택사항이 없는 경우)' 부분을 클릭합니다.",
-        "기본값인 '아무것도 없음'을 지우고 ➔ **[클립보드]** (또는 '클립보드 콘텐츠')로 변경하여 선택해 줍니다."
+        "Open the macOS 'Shortcuts' app and click the '+' icon in the top toolbar.",
+        "In the right panel, check 'Use as Quick Action' and 'Services Menu'.",
+        "Select 'Receive [Text] from [Quick Actions]'.",
+        "Click '(if there's no input)' and choose **[Clipboard]** as the backup source."
       ],
-      imageTip: "이렇게 세팅하면 드래그 선택 오류 시 복사(Cmd+C) 후 단축키를 눌러도 정상 백업 동작합니다."
+      imageTip: "This ensures the shortcut works via copy-paste fallback even if text selection detection drops."
     },
     {
-      title: "2. 번역 웹사이트 URL 추가 및 열기",
-      description: "원문을 주소 뒤에 덧붙여서 즉시 웹 번역기 화면을 새 탭이나 팝업창으로 띄워주는 URL 주소를 세팅합니다.",
+      title: "2. Set up Browser Navigation URL",
+      description: "Configure the shortcut to open the full interactive workspace in a new browser tab or window.",
       icon: ExternalLink,
       instructions: [
-        "우측 검색창에서 'URL' 작업을 검색하여 추가합니다.",
-        "URL 입력란에 아래 '웹 번역기 연동 주소'를 복사하여 넣고, 주소 끝자리에 '단축어 입력' 변수를 대입합니다.",
-        "이후 'URL 열기' (Open URLs) 작업을 검색하여 추가하고 연동합니다."
+        "Search for the 'URL' action and add it to your shortcut editor.",
+        "Paste the 'Web Workspace URL' shown at the bottom of this page, and append the 'Shortcut Input' variable.",
+        "Add an 'Open URLs' action block directly beneath it."
       ],
-      imageTip: "완성 주소 형태: " + appUrl + "/?text=[단축어 입력]"
+      imageTip: "Final URL format: " + appUrl + "/?text=[Shortcut Input]"
     },
     {
-      title: "3. 단축키 매핑 (Cmd + Option + Shift + T)",
-      description: "성경 연구 도중 마우스 드래그를 마치면 한 번에 웹 번역기를 띄울 수 있도록 최종 단축키를 등록합니다.",
+      title: "3. Map Shortcut (Cmd + Option + Shift + T)",
+      description: "Assign a quick hotkey to trigger the browser-based workspace.",
       icon: Keyboard,
       instructions: [
-        "우측 단축어 세부사항 설정에서 '키보드 단축키 추가'를 누릅니다.",
-        "키보드에서 Cmd + Option + Shift + T 조합을 누릅니다.",
-        "이제 로고스 성경에서 드래그 후 지정 단축키를 누르면 아름다운 웹 분석기가 즉시 열립니다!"
+        "In the right-hand details tab, assign the keyboard combination 'Cmd + Option + Shift + T'.",
+        "Your shortcut is complete! Select text in Logos, trigger the hotkey, and watch the browser compile your results."
       ],
-      imageTip: "웹 번역기는 더 풍성한 카드 UI와 복사, 저장 등 세분화된 대화형 컨트롤을 제공합니다."
+      imageTip: "The browser workspace offers comprehensive tabbed modules, history saving, and original lexicon search."
     }
   ];
 
@@ -156,10 +155,10 @@ export default function MacShortcutGuide() {
         <div>
           <h3 className="font-serif text-xl font-semibold text-stone-800 flex items-center gap-2">
             <span className="inline-flex items-center justify-center bg-stone-800 text-stone-100 text-xs font-sans w-5 h-5 rounded-full"></span>
-            macOS Logos 마우스 블록 단축키 연동 가이드
+            macOS Logos Keyboard Shortcut Integration Guide
           </h3>
           <p className="text-sm text-stone-600 mt-1">
-            Logos 성경 앱에서 마우스로 드래그한 영문 본문을 <strong>Cmd + Option + Shift + T</strong> 키로 즉시 번역하는 연동 가이드입니다.
+            Translate any selected English text in your Logos Bible app instantly by mapping a system-wide hotkey: <strong>Cmd + Option + Shift + T</strong>.
           </p>
         </div>
       </div>
@@ -175,7 +174,7 @@ export default function MacShortcutGuide() {
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-          방법 1. 브라우저 없이 '네이티브 팝업창'으로 바로 보기 (강력 추천!)
+          Method 1: Native Floating Popup (Highly Recommended - No Browser Needed)
         </button>
         <button
           onClick={() => handleTabChange("browser")}
@@ -186,7 +185,7 @@ export default function MacShortcutGuide() {
           }`}
         >
           <Monitor className="w-3.5 h-3.5 text-blue-600" />
-          방법 2. 브라우저 새 창/팝업 띄우기로 보기
+          Method 2: Full Interactive Browser Workspace
         </button>
       </div>
 
@@ -220,15 +219,15 @@ export default function MacShortcutGuide() {
           <div className="mt-4 p-3.5 bg-amber-50/50 rounded-lg border border-amber-100 text-xs text-stone-700 space-y-2">
             <p className="font-semibold text-amber-900 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              {activeTab === "native" ? "네이티브 팝업의 압도적 편리함!" : "인터랙티브 웹 번역!"}
+              {activeTab === "native" ? "Seamless Native Popups!" : "Interactive Web Workspace!"}
             </p>
             {activeTab === "native" ? (
               <p className="leading-relaxed text-[11px] text-amber-800">
-                인터넷 브라우저를 열어서 흐름을 깨뜨리지 않고, macOS Shortcuts 엔진을 통해 Logos 성경 본문 위에 <strong>반투명하고 미려한 텍스트 카드 팝업창</strong>을 띄워 번역/원어풀이/신학 해설을 보여줍니다.
+                Displays a translucent floating card directly above your active Logos window. Ideal for quick translation and parsing without interrupting your study flow.
               </p>
             ) : (
               <p className="leading-relaxed text-[11px] text-amber-800">
-                Logos에서 단축키를 누르면 브라우저를 가볍게 띄워 고급스럽게 디자인된 3단 분할 패널 번역기에서 단어 분석과 문장별 일대일 매핑, 저장 기능을 사용합니다.
+                Opens the full web application on a separate tab, providing deep tabbed insights, histories, and dictionary annotations.
               </p>
             )}
           </div>
@@ -272,14 +271,14 @@ export default function MacShortcutGuide() {
                 className="flex items-center justify-center gap-1 flex-1 sm:flex-initial px-3 py-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 rounded-md disabled:opacity-40 transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                이전
+                Previous
               </button>
               <button
                 disabled={activeStep === steps.length - 1}
                 onClick={() => setActiveStep(p => p + 1)}
                 className="flex items-center justify-center gap-1 flex-1 sm:flex-initial px-3 py-1.5 bg-stone-800 text-stone-100 hover:bg-stone-900 rounded-md disabled:opacity-40 transition-colors"
               >
-                다음
+                Next
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -293,9 +292,9 @@ export default function MacShortcutGuide() {
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex-1">
-                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">방법 1 전용 주소</span>
-                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">단축어 URL 블록용 복사 대상 (API 번역 카드 주소)</h5>
-                <p className="text-[11px] text-stone-600 mt-0.5">단축어 앱의 'URL' 상자에 이 주소를 붙여넣은 뒤, 맨 뒤에 <code className="font-mono text-amber-800 font-bold bg-amber-100/50 px-1 rounded">단축어 입력</code> 변수를 매핑하세요.</p>
+                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Method 1 Endpoint</span>
+                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">API URL for Native Popup Card (Method 1)</h5>
+                <p className="text-[11px] text-stone-600 mt-0.5">Paste this address in the 'URL' box of the Shortcuts app, then map the <code className="font-mono text-amber-800 font-bold bg-amber-100/50 px-1 rounded">Shortcut Input</code> variable right at the end.</p>
               </div>
               <button
                 onClick={handleCopyTextUrl}
@@ -304,12 +303,12 @@ export default function MacShortcutGuide() {
                 {copiedTextUrl ? (
                   <>
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>복사 완료!</span>
+                    <span>Copied!</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>API 번역 주소 복사</span>
+                    <span>Copy API URL</span>
                   </>
                 )}
               </button>
@@ -322,9 +321,9 @@ export default function MacShortcutGuide() {
           <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex-1">
-                <span className="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">방법 2 전용 주소</span>
-                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">단축어 URL 블록용 복사 대상 (웹 번역 앱 주소)</h5>
-                <p className="text-[11px] text-stone-600 mt-0.5">단축어 앱의 'URL' 상자에 이 주소를 넣고 뒤에 <code className="font-mono text-blue-900 bg-blue-100/50 px-1 rounded">단축어 입력</code> 변수를 대입하세요.</p>
+                <span className="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Method 2 Web URL</span>
+                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">Web Workspace URL (Method 2)</h5>
+                <p className="text-[11px] text-stone-600 mt-0.5">Paste this address in the 'URL' box, then append the <code className="font-mono text-blue-900 bg-blue-100/50 px-1 rounded">Shortcut Input</code> variable at the end.</p>
               </div>
               <button
                 onClick={handleCopyWebUrl}
@@ -333,12 +332,12 @@ export default function MacShortcutGuide() {
                 {copiedWebUrl ? (
                   <>
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>복사 완료!</span>
+                    <span>Copied!</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>웹 번역 앱 주소 복사</span>
+                    <span>Copy Workspace URL</span>
                   </>
                 )}
               </button>
@@ -353,25 +352,25 @@ export default function MacShortcutGuide() {
       {/* Visual Diagram for Shortcuts flow */}
       <div className="mt-6 bg-stone-800 text-stone-100 p-5 rounded-xl">
         <h4 className="text-xs font-mono font-semibold uppercase text-stone-400 tracking-wider mb-3">
-          macOS 단축어 흐름도 (Shortcuts Action Diagram)
+          macOS Shortcuts Automation Flow
         </h4>
         <div className="flex flex-col md:flex-row items-center justify-around gap-4 text-xs font-mono pt-2">
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
-            <span className="text-stone-400 text-[10px]">01. 외부 트리거</span>
-            <span className="font-semibold text-stone-200 mt-1">드래그한 텍스트</span>
+            <span className="text-stone-400 text-[10px]">01. Trigger</span>
+            <span className="font-semibold text-stone-200 mt-1">Selected Text</span>
             <span className="text-[10px] text-amber-400/80 mt-1">Cmd + Opt + Shift + T</span>
           </div>
           <span className="text-stone-500 font-bold hidden md:inline">➔</span>
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
-            <span className="text-stone-400 text-[10px]">02. API 호출</span>
+            <span className="text-stone-400 text-[10px]">02. API Request</span>
             <span className="font-semibold text-stone-200 mt-1">api/translate-text</span>
             <span className="text-[10px] text-stone-400 mt-1">Get Contents of URL</span>
           </div>
           <span className="text-stone-500 font-bold hidden md:inline">➔</span>
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
-            <span className="text-stone-400 text-[10px]">03. 팝업 화면</span>
-            <span className="font-semibold text-amber-300 mt-1">macOS 알림/훑어보기</span>
-            <span className="text-[10px] text-stone-400 mt-1">Show Result (팝업 카드)</span>
+            <span className="text-stone-400 text-[10px]">03. Overlay</span>
+            <span className="font-semibold text-amber-300 mt-1">Floating Web Page</span>
+            <span className="text-[10px] text-stone-400 mt-1">Show Result Overlay</span>
           </div>
         </div>
       </div>

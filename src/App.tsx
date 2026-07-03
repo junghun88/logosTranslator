@@ -23,6 +23,7 @@ import MacShortcutGuide from "./components/MacShortcutGuide";
 export default function App() {
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"balanced" | "scholarly" | "devotional">("balanced");
+  const [targetLang, setTargetLang] = useState<string>("Korean");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +34,12 @@ export default function App() {
 
   // Loading indicator messages to show intelligence and depth
   const loadingMessages = [
-    "Gemini 신학 엔진 연결 중...",
-    "Logos 원문 문맥 분석 중...",
-    "고전 헬라어/히브리어 원어 사전 대조 검색 중...",
-    "품격 있는 한글 신학 용어로 문장 번역 중...",
-    "연관 신학 에세이 및 역사적 맥락 작성 중...",
-    "교차 대조 성경 구절 엄선 중..."
+    "Connecting to Gemini Theology Engine...",
+    "Analyzing Logos source context...",
+    "Cross-referencing Classical Greek & Hebrew lexicons...",
+    "Translating passage into target theological terms...",
+    "Generating deep theological insights & historical context...",
+    "Curating relevant biblical cross-references..."
   ];
 
   // Load history on mount
@@ -64,6 +65,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const textParam = params.get("text");
     const modeParam = params.get("mode");
+    const targetLangParam = params.get("targetLang") || params.get("target_lang") || params.get("lang");
 
     if (textParam) {
       let decodedText = textParam;
@@ -80,13 +82,21 @@ export default function App() {
 
       setText(decodedText);
       
+      let finalMode: "balanced" | "scholarly" | "devotional" = "balanced";
       if (modeParam && (modeParam === "balanced" || modeParam === "scholarly" || modeParam === "devotional")) {
         setMode(modeParam);
+        finalMode = modeParam;
+      }
+
+      let finalLang = "Korean";
+      if (targetLangParam) {
+        setTargetLang(targetLangParam);
+        finalLang = targetLangParam;
       }
 
       // Automatically trigger translation with a slight delay to allow rendering
       const timer = setTimeout(() => {
-        handleTranslate(decodedText);
+        handleTranslate(decodedText, finalMode, finalLang);
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -105,9 +115,13 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loading]);
 
-  const handleTranslate = async (textToTranslate: string = text) => {
+  const handleTranslate = async (
+    textToTranslate: string = text,
+    modeToUse: "balanced" | "scholarly" | "devotional" = mode,
+    langToUse: string = targetLang
+  ) => {
     if (!textToTranslate.trim()) {
-      setError("번역할 텍스트를 입력해 주세요.");
+      setError("Please enter the text to be translated.");
       return;
     }
 
@@ -124,7 +138,8 @@ export default function App() {
         },
         body: JSON.stringify({
           text: textToTranslate,
-          mode
+          mode: modeToUse,
+          targetLang: langToUse
         })
       });
 
@@ -141,7 +156,7 @@ export default function App() {
       }
 
       if (!response.ok) {
-        let cleanMsg = "번역에 실패하였습니다.";
+        let cleanMsg = "Translation failed.";
         if (parsedData && parsedData.error) {
           cleanMsg = parsedData.error;
         } else if (responseText) {
@@ -165,16 +180,16 @@ export default function App() {
       }
 
       if (!parsedData) {
-        if (responseText && (responseText.includes("⚠️") || responseText.includes("오류") || responseText.includes("실패") || responseText.includes("번역"))) {
+        if (responseText && (responseText.includes("⚠️") || responseText.includes("error") || responseText.includes("failed") || responseText.includes("translation"))) {
           throw new Error(responseText);
         }
-        throw new Error("서버로부터 올바르지 않은 응답이 반환되었습니다.");
+        throw new Error("Invalid response received from the server.");
       }
 
       setResult(parsedData as TranslationResult);
     } catch (err: any) {
       console.error("Translation request failed:", err);
-      setError(err?.message || "번역 및 분석 요청 중 오류가 발생했습니다.");
+      setError(err?.message || "An error occurred during the translation and analysis request.");
     } finally {
       setLoading(false);
     }
@@ -185,7 +200,7 @@ export default function App() {
 
     // Check if current is already saved in history
     const existingIndex = history.findIndex(
-      item => item.originalText === result.originalText && item.mode === mode
+      item => item.originalText === result.originalText && item.mode === mode && (item.targetLang || "Korean") === targetLang
     );
 
     if (existingIndex >= 0) {
@@ -201,6 +216,7 @@ export default function App() {
         originalText: result.originalText,
         translation: result.translation,
         mode,
+        targetLang,
         result
       };
       const updated = [newItem, ...history];
@@ -213,6 +229,7 @@ export default function App() {
     setResult(item.result);
     setText(item.originalText);
     setMode(item.mode);
+    setTargetLang(item.targetLang || "Korean");
     setActiveHistoryId(item.id);
   };
 
@@ -225,7 +242,7 @@ export default function App() {
   };
 
   const handleClearHistory = () => {
-    if (confirm("모든 연구 기록을 삭제하시겠습니까?")) {
+    if (confirm("Are you sure you want to delete all study history?")) {
       saveHistoryToStore([]);
       setActiveHistoryId(null);
     }
@@ -239,7 +256,7 @@ export default function App() {
           setText(clipboardText);
         }
       } else {
-        alert("브라우저 보안 설정으로 인해 클립보드에 직접 접근할 수 없습니다. 수동으로 붙여넣어 주세요.");
+        alert("Unable to access the clipboard due to browser security settings. Please paste the text manually.");
       }
     } catch (err) {
       console.error("Clipboard paste error:", err);
@@ -247,7 +264,7 @@ export default function App() {
   };
 
   const isCurrentSaved = history.some(
-    item => result && item.originalText === result.originalText && item.mode === mode
+    item => result && item.originalText === result.originalText && item.mode === mode && (item.targetLang || "Korean") === targetLang
   );
 
   return (
@@ -269,7 +286,7 @@ export default function App() {
                 </span>
               </div>
               <p className="text-xs text-stone-500 font-serif mt-0.5">
-                맥북 Logos 성경 영문 본문 및 주석 번역·신학 분석 시스템
+                MacBook Logos Bible Translation & Theological Parsing System
               </p>
             </div>
           </div>
@@ -284,7 +301,7 @@ export default function App() {
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
-              {showGuide ? "가이드 접기" : " macOS 단축키 연동 방법"}
+              {showGuide ? "Collapse Guide" : " macOS Shortcuts Guide"}
             </button>
             <span className="h-6 w-px bg-stone-200 hidden md:block"></span>
             <div className="hidden md:flex flex-col items-end">
@@ -326,7 +343,7 @@ export default function App() {
               <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
                 <h3 className="font-serif font-bold text-stone-800 text-sm flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-stone-700" />
-                  영문 텍스트 분석기
+                  English Text Analyzer
                 </h3>
                 <span className="text-[10px] font-mono text-stone-400 font-semibold">
                   {text.length} characters
@@ -337,7 +354,7 @@ export default function App() {
                 <textarea
                   id="source-text-input"
                   rows={6}
-                  placeholder="Logos 성경 앱의 영문 구절이나 신학 주석을 입력하세요..."
+                  placeholder="Enter English Bible verses or theological commentaries from your Logos app..."
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   className="w-full p-4 border border-stone-200 rounded-xl text-sm leading-relaxed placeholder-stone-400 focus:outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500 font-serif text-stone-800 resize-none bg-stone-50/50"
@@ -348,17 +365,17 @@ export default function App() {
                   <button
                     onClick={handlePasteClipboard}
                     className="p-1.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-lg text-stone-500 hover:text-stone-800 shadow-xs transition-colors flex items-center gap-1 text-[10px] font-medium"
-                    title="클립보드 붙여넣기"
+                    title="Paste from clipboard"
                   >
                     <ClipboardPaste className="w-3 h-3" />
-                    <span>붙여넣기</span>
+                    <span>Paste</span>
                   </button>
                   {text && (
                     <button
                       onClick={() => setText("")}
                       className="p-1.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-lg text-stone-500 hover:text-stone-800 shadow-xs transition-colors text-[10px]"
                     >
-                      비우기
+                      Clear
                     </button>
                   )}
                 </div>
@@ -366,12 +383,12 @@ export default function App() {
 
               {/* Study Mode Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-serif font-bold text-stone-600 block">연구 모드 (Study Mode)</label>
+                <label className="text-xs font-serif font-bold text-stone-600 block">Study Mode</label>
                 <div className="grid grid-cols-3 gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-lg">
                   {[
-                    { id: "balanced", label: "균형", desc: "기본" },
-                    { id: "scholarly", label: "학술", desc: "원어" },
-                    { id: "devotional", label: "묵상", desc: "경건" }
+                    { id: "balanced", label: "Balanced", desc: "Default" },
+                    { id: "scholarly", label: "Scholarly", desc: "Lexicon" },
+                    { id: "devotional", label: "Devotional", desc: "Pastoral" }
                   ].map(m => (
                     <button
                       key={m.id}
@@ -389,6 +406,36 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Target Language Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-serif font-bold text-stone-600 block flex items-center justify-between">
+                  <span>Target Language</span>
+                  <span className="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-serif font-semibold">
+                    Theology Optimized
+                  </span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={targetLang}
+                    onChange={(e) => setTargetLang(e.target.value)}
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-xs font-semibold text-stone-800 focus:outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500 appearance-none cursor-pointer pr-8 font-sans"
+                  >
+                    <option value="Korean">한국어 (Korean)</option>
+                    <option value="English">영어 (English)</option>
+                    <option value="Japanese">일본어 (Japanese)</option>
+                    <option value="Chinese Simplified">중국어 간체 (Chinese Simplified)</option>
+                    <option value="Chinese Traditional">중국어 번체 (Chinese Traditional)</option>
+                    <option value="Spanish">스페인어 (Spanish)</option>
+                    <option value="German">독일어 (German)</option>
+                    <option value="French">프랑스어 (French)</option>
+                    <option value="Portuguese">포르투갈어 (Portuguese)</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-stone-500">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </div>
+
               {/* Action Button */}
               <button
                 onClick={() => handleTranslate()}
@@ -401,12 +448,12 @@ export default function App() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    <span>분석 번역 중...</span>
+                    <span>Analyzing & Translating...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>신학적 대조 번역 실행</span>
+                    <span>Run Theological Parsing</span>
                   </>
                 )}
               </button>
@@ -415,7 +462,7 @@ export default function App() {
               <div className="bg-stone-50 border border-stone-100 rounded-lg p-3 text-[11px] text-stone-500 flex gap-2">
                 <Info className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
                 <p className="leading-relaxed">
-                  Logos에서 텍스트를 마우스 드래그해 복사한 후 <strong>붙여넣기</strong> 버튼을 누르거나, 상단의 macOS 단축어 연동을 구성하여 원스톱 번역을 누려보세요.
+                  Drag and copy text in Logos, click the <strong>Paste</strong> button, or configure macOS Shortcuts for seamless one-click translation.
                 </p>
               </div>
             </div>
@@ -452,7 +499,7 @@ export default function App() {
                       {loadingMessages[loadingStep]}
                     </h4>
                     <p className="text-xs text-stone-500 leading-relaxed">
-                      AI 신학 번역기가 단어의 성경 원어 사전과 깊은 역사적 주해적 맥락을 입체적으로 추출하고 있습니다. 잠시만 기다려 주세요.
+                      The theological parser is extracting lexicon definitions, original word roots, and deep historical commentary. This may take a moment.
                     </p>
                   </div>
                 </motion.div>
@@ -469,7 +516,7 @@ export default function App() {
                   <div className="flex items-start gap-3">
                     <span className="text-lg">⚠️</span>
                     <div className="space-y-1">
-                      <h4 className="font-bold text-sm">신학 번역 요청 실패 (API Error)</h4>
+                      <h4 className="font-bold text-sm">Theological Translation Failed (API Error)</h4>
                       <p className="text-xs text-red-700 leading-relaxed font-mono bg-red-100/50 p-2 rounded border border-red-200">{error}</p>
                     </div>
                   </div>
@@ -482,14 +529,14 @@ export default function App() {
                     error.toUpperCase().includes("UNAUTHORIZED")) && (
                     <div className="bg-white border border-red-200 rounded-lg p-4 text-xs text-stone-700 space-y-3 shadow-xs">
                       <p className="font-bold text-stone-900 flex items-center gap-1.5">
-                        💡 GEMINI_API_KEY 설정 방법 가이드
+                        💡 How to Set Up Your GEMINI_API_KEY
                       </p>
                       <ol className="list-decimal list-inside space-y-1.5 text-stone-600 pl-1">
-                        <li>이 웹브라우저 우측 상단이나 AI Studio의 <strong>Settings</strong> (설정) 메뉴를 클릭합니다.</li>
-                        <li><strong>Secrets</strong> 또는 <strong>Environment Variables</strong> 탭을 찾습니다.</li>
-                        <li>이름을 <code className="bg-stone-100 text-stone-800 px-1 py-0.5 rounded font-mono font-semibold">GEMINI_API_KEY</code>로 설정합니다.</li>
-                        <li>구글 AI 스튜디오나 구글 클라우드에서 발급받은 실제 API 키 값을 입력하고 저장합니다.</li>
-                        <li>단축어 및 웹 앱을 새로고침하여 다시 사용해 주세요!</li>
+                        <li>Click the <strong>Settings</strong> menu in the upper right corner of this browser or your AI Studio environment.</li>
+                        <li>Navigate to the <strong>Secrets</strong> or <strong>Environment Variables</strong> tab.</li>
+                        <li>Add a new variable with the name <code className="bg-stone-100 text-stone-800 px-1 py-0.5 rounded font-mono font-semibold">GEMINI_API_KEY</code>.</li>
+                        <li>Paste your actual API Key from Google AI Studio or Google Cloud Console, and save.</li>
+                        <li>Refresh the page or try re-running the translation!</li>
                       </ol>
                     </div>
                   )}
@@ -497,15 +544,15 @@ export default function App() {
                   {error.includes("DEEPL") && (
                     <div className="bg-white border border-red-200 rounded-lg p-4 text-xs text-stone-700 space-y-3 shadow-xs">
                       <p className="font-bold text-stone-900 flex items-center gap-1.5">
-                        💡 DEEPL_API_KEY 설정 방법 가이드
+                        💡 How to Set Up Your DEEPL_API_KEY
                       </p>
                       <p className="text-stone-600">
-                        DeepL API 연동 중 오류가 생겼거나 키를 등록하고 싶으신가요?
+                        Encountered a DeepL API error, or want to configure a DeepL key for dual translations?
                       </p>
                       <ol className="list-decimal list-inside space-y-1.5 text-stone-600 pl-1">
-                        <li><a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer" className="text-stone-900 underline font-semibold">DeepL API Developer Portal</a>에 로그인하거나 가입합니다.</li>
-                        <li>무료 플랜(DeepL API Free, 월 50만자 무료) 또는 프로 플랜에 가입한 뒤 계정 설정에서 API 키를 복사합니다.</li>
-                        <li>우측 상단 <strong>Settings</strong> 메뉴에서 <code className="bg-stone-100 text-stone-800 px-1 py-0.5 rounded font-mono font-semibold">DEEPL_API_KEY</code> 이름으로 키 값을 등록해 주세요.</li>
+                        <li>Sign up or log in to the <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer" className="text-stone-900 underline font-semibold">DeepL API Developer Portal</a>.</li>
+                        <li>Acquire your API Key (the free plan offers 500k characters/month) and copy it.</li>
+                        <li>Open the <strong>Settings</strong> panel at the top right, and save the key under the name <code className="bg-stone-100 text-stone-800 px-1 py-0.5 rounded font-mono font-semibold">DEEPL_API_KEY</code>.</li>
                       </ol>
                     </div>
                   )}
@@ -515,7 +562,7 @@ export default function App() {
                       onClick={() => handleTranslate()}
                       className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 font-bold text-xs rounded transition-colors"
                     >
-                      다시 시도하기
+                      Try Again
                     </button>
                     {(error.toUpperCase().includes("GEMINI") || error.toUpperCase().includes("KEY") || error.toUpperCase().includes("API")) && (
                       <a 
@@ -524,7 +571,7 @@ export default function App() {
                         rel="noreferrer" 
                         className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-bold text-xs rounded transition-colors inline-block"
                       >
-                        무료 Gemini API Key 발급받기 ↗
+                        Get Free Gemini API Key ↗
                       </a>
                     )}
                   </div>
@@ -555,9 +602,9 @@ export default function App() {
                   className="bg-stone-50 border border-stone-200 border-dashed rounded-xl p-12 text-center min-h-[400px] flex flex-col items-center justify-center shadow-inner"
                 >
                   <BookOpen className="w-12 h-12 text-stone-300 mb-4" />
-                  <h3 className="font-serif font-bold text-stone-700 text-base">분석할 본문을 선택하거나 연동해 주세요</h3>
+                  <h3 className="font-serif font-bold text-stone-700 text-base">Select or Paste a Passage to Analyze</h3>
                   <p className="text-xs text-stone-500 max-w-sm mt-1.5 leading-relaxed">
-                    왼쪽 입력창에 영문 성경 구절이나 신학 주석을 직접 입력하시거나 복사해서 대입한 다음, 번역 버튼을 누르시면 전문적인 신학 사전 번역 및 대조 주해 데이터를 한눈에 공부할 수 있습니다.
+                    Paste English Bible verses or commentaries in the left input box, or load an example below. The system will provide dual translations, cross-references, and lexicon annotations.
                   </p>
                   
                   <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -568,7 +615,7 @@ export default function App() {
                       }}
                       className="px-3 py-2 bg-white hover:bg-stone-100 border border-stone-200 text-stone-600 rounded-lg text-xs font-semibold transition-all shadow-xs"
                     >
-                      예시 구절 넣기 (요한복음 3:16)
+                      Load Devotional Example (John 3:16)
                     </button>
                     <button
                       onClick={() => {
@@ -577,7 +624,7 @@ export default function App() {
                       }}
                       className="px-3 py-2 bg-white hover:bg-stone-100 border border-stone-200 text-stone-600 rounded-lg text-xs font-semibold transition-all shadow-xs"
                     >
-                      학술적 구절 넣기 (로마서 5:1-2)
+                      Load Scholarly Example (Romans 5:1-2)
                     </button>
                   </div>
                 </motion.div>
@@ -596,7 +643,7 @@ export default function App() {
             Logos Translation Companion & Theological Parser
           </p>
           <p className="text-xs max-w-md mx-auto text-stone-400 font-light leading-relaxed">
-            이 앱은 맥북 Logos 성경 앱 유저의 깊이 있는 원어 및 주해 연구를 돕기 위해 개발된 웹 어플리케이션입니다. macOS 단축어 연동 기술을 통해 로컬 앱과의 실시간 연동을 완벽 지원합니다.
+            This application is designed to assist MacBook Logos Bible Software users in original language studies and contextual biblical research. It fully supports real-time popup integrations using macOS Shortcuts.
           </p>
           <div className="text-[10px] text-stone-600 font-mono mt-4">
             Powered by Google Gemini 3.5 Flash & Antigravity Built

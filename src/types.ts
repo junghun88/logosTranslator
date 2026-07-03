@@ -35,5 +35,6 @@ export interface SavedTranslation {
   originalText: string;
   translation: string;
   mode: "balanced" | "scholarly" | "devotional";
+  targetLang?: string;
   result: TranslationResult;
 }

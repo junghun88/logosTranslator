@@ -41,9 +41,9 @@ export default function TranslationViewer({
 
   const getModeLabel = (m: string) => {
     switch (m) {
-      case "scholarly": return "학술적 연구 (Scholarly)";
-      case "devotional": return "경건과 묵상 (Devotional)";
-      default: return "균형 잡힌 번역 (Balanced)";
+      case "scholarly": return "Scholarly Study";
+      case "devotional": return "Pastoral & Devotional";
+      default: return "Balanced Translation";
     }
   };
 
@@ -75,19 +75,19 @@ export default function TranslationViewer({
             {isSaved ? (
               <>
                 <BookmarkCheck className="w-4 h-4 text-amber-600 fill-amber-600" />
-                <span>연구 노트 저장됨</span>
+                <span>Saved to History</span>
               </>
             ) : (
               <>
                 <Bookmark className="w-4 h-4" />
-                <span>연구 노트 저장</span>
+                <span>Save to History</span>
               </>
             )}
           </button>
           
           <button
             onClick={() => copyToClipboard(
-              `[원문]\n${result.originalText}\n\n[번역]\n${result.translation}\n\n[주석 및 연구]\n${result.theologicalInsights}`,
+              `[Source]\n${result.originalText}\n\n[Translation]\n${result.translation}\n\n[Commentary]\n${result.theologicalInsights}`,
               "all"
             )}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg text-xs font-medium transition-all"
@@ -95,12 +95,12 @@ export default function TranslationViewer({
             {copiedSection === "all" ? (
               <>
                 <Check className="w-4 h-4 text-emerald-600" />
-                <span>전체 복사 완료</span>
+                <span>Copied All</span>
               </>
             ) : (
               <>
                 <Copy className="w-4 h-4" />
-                <span>전체 복사</span>
+                <span>Copy All</span>
               </>
             )}
           </button>
@@ -110,10 +110,10 @@ export default function TranslationViewer({
       {/* Tabs */}
       <div className="flex border-b border-stone-200 px-6 overflow-x-auto gap-4">
         {[
-          { id: "overview", label: "종합 번역 & 신학 에세이", icon: FileText },
-          { id: "sentences", label: "문장별 대조 분석", icon: Globe },
-          { id: "words", label: "핵심 원어 사전 (Greek/Hebrew)", icon: BookOpen },
-          { id: "references", label: "관련 구절 (Cross-Ref)", icon: HelpCircle }
+          { id: "overview", label: "Overview & Commentary", icon: FileText },
+          { id: "sentences", label: "Sentence Comparison", icon: Globe },
+          { id: "words", label: "Original Lexicon (Greek/Hebrew)", icon: BookOpen },
+          { id: "references", label: "Cross References", icon: HelpCircle }
         ].map(tab => {
           const TabIcon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -147,9 +147,9 @@ export default function TranslationViewer({
             {/* DeepL Info Banner when not used */}
             {!result.deeplUsed && (
               <div className="bg-stone-50 border border-stone-200 rounded-lg p-3.5 text-xs text-stone-600 flex items-start gap-2.5">
-                <span className="text-stone-400 font-bold">ℹ️ DeepL 연동 가이드:</span>
+                <span className="text-stone-400 font-bold">ℹ️ DeepL Integration Guide:</span>
                 <p className="leading-relaxed">
-                  현재 Google Gemini 엔진만으로 번역이 동작 중입니다. <strong>DeepL API 키</strong>를 AI Studio 우측 상단 <strong>Settings &gt; Secrets</strong> 패널에 <code className="font-mono bg-white px-1 border rounded text-amber-800">DEEPL_API_KEY</code> 이름으로 등록하시면, DeepL의 정확한 어휘 직역과 Gemini의 깊이 있는 문맥 연구를 3단 분할 패널로 동시 대조할 수 있습니다.
+                  Currently running on Google Gemini engine. You can add your <strong>DeepL API Key</strong> under the name <code className="font-mono bg-white px-1 border rounded text-amber-800">DEEPL_API_KEY</code> in the <strong>Settings &gt; Secrets</strong> panel to display side-by-side DeepL high-precision literal translation and Gemini deep theological parsing.
                 </p>
               </div>
             )}
@@ -157,7 +157,7 @@ export default function TranslationViewer({
             {/* DeepL Error Info if failed */}
             {result.deeplError && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                ⚠️ DeepL API 연결 중 실패하여 Gemini 번역 결과로 대체되었습니다. (오류 내용: {result.deeplError})
+                ⚠️ DeepL API request failed. Reverting to Gemini. (Error details: {result.deeplError})
               </div>
             )}
 
@@ -177,17 +177,17 @@ export default function TranslationViewer({
                   <button
                     onClick={() => copyToClipboard(result.originalText, "english")}
                     className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-stone-100 border border-stone-200 rounded text-[10px] text-stone-600 font-medium"
-                    title="원문 복사"
+                    title="Copy original"
                   >
                     {copiedSection === "english" ? (
                       <>
                         <Check className="w-3 h-3 text-emerald-600" />
-                        <span>복사 완료</span>
+                        <span>Copied</span>
                       </>
                     ) : (
                       <>
                         <Copy className="w-3 h-3" />
-                        <span>영어 원문 복사</span>
+                        <span>Copy Original</span>
                       </>
                     )}
                   </button>
@@ -200,7 +200,7 @@ export default function TranslationViewer({
                   <div>
                     <div className="flex justify-between items-center mb-2.5">
                       <h4 className="font-mono text-[10px] uppercase text-blue-600/70 tracking-wider font-semibold">DeepL Literal Translation</h4>
-                      <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-sans font-medium">DeepL 고정밀 직역</span>
+                      <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-sans font-medium">DeepL Literal</span>
                     </div>
                     <div className="font-sans text-sm text-stone-800 leading-relaxed whitespace-pre-line">
                       {result.deeplTranslation}
@@ -210,17 +210,17 @@ export default function TranslationViewer({
                     <button
                       onClick={() => copyToClipboard(result.deeplTranslation || "", "deepl")}
                       className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-stone-100 border border-stone-200 rounded text-[10px] text-stone-600 font-medium"
-                      title="DeepL 번역 복사"
+                      title="Copy DeepL"
                     >
                       {copiedSection === "deepl" ? (
                         <>
                           <Check className="w-3 h-3 text-emerald-600" />
-                          <span>복사 완료</span>
+                          <span>Copied</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>직역본 복사</span>
+                          <span>Copy Literal</span>
                         </>
                       )}
                     </button>
@@ -233,7 +233,7 @@ export default function TranslationViewer({
                 <div>
                   <div className="flex justify-between items-center mb-2.5">
                     <h4 className="font-mono text-[10px] uppercase text-amber-700/60 tracking-wider font-semibold">Theological Translation</h4>
-                    <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-sans font-semibold">Gemini 신학·문맥 역본</span>
+                    <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-sans font-semibold">Gemini Contextual</span>
                   </div>
                   <div className="font-sans text-base text-stone-900 font-medium leading-relaxed whitespace-pre-line">
                     {result.translation}
@@ -243,17 +243,17 @@ export default function TranslationViewer({
                   <button
                     onClick={() => copyToClipboard(result.translation, "korean")}
                     className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-stone-100 border border-stone-200 rounded text-[10px] text-stone-600 font-medium"
-                    title="번역문 복사"
+                    title="Copy translation"
                   >
                     {copiedSection === "korean" ? (
                       <>
                         <Check className="w-3 h-3 text-emerald-600" />
-                        <span>복사 완료</span>
+                        <span>Copied</span>
                       </>
                     ) : (
                       <>
                         <Copy className="w-3 h-3" />
-                        <span>의역본 복사</span>
+                        <span>Copy Contextual</span>
                       </>
                     )}
                   </button>
@@ -265,7 +265,7 @@ export default function TranslationViewer({
             <div className="border-t border-stone-100 pt-6">
               <h4 className="font-serif font-bold text-stone-800 text-md mb-3 flex items-center gap-1.5">
                 <span className="w-1.5 h-4 bg-stone-700 rounded-full inline-block"></span>
-                해당 본문의 신학적 맥락과 통찰 (Theological Commentary)
+                Theological Commentary & Contextual Insights
               </h4>
               <div className="bg-stone-50 border border-stone-200 rounded-xl p-5 text-sm text-stone-700 leading-relaxed whitespace-pre-line">
                 {result.theologicalInsights}
@@ -282,7 +282,7 @@ export default function TranslationViewer({
             className="space-y-4"
           >
             <div className="text-xs text-stone-500 mb-2">
-              각 원문 문장별 일대일 매칭을 통해 문장의 문법 구조와 한글 의미를 입체적으로 대조 연구할 수 있습니다.
+              Compare sentence structures side-by-side to study grammatical flow and precise translation matches.
             </div>
 
             <div className="divide-y divide-stone-100">
@@ -300,7 +300,7 @@ export default function TranslationViewer({
                     
                     <div className="lg:col-span-1 flex lg:justify-center items-center">
                       <ArrowRight className="w-4 h-4 text-stone-300 hidden lg:block" />
-                      <span className="lg:hidden text-[10px] font-mono text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded font-semibold">번역 매칭</span>
+                      <span className="lg:hidden text-[10px] font-mono text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded font-semibold">Translation</span>
                     </div>
 
                     <div className="lg:col-span-6 bg-stone-50/50 p-3 rounded-lg border border-stone-100">
@@ -310,7 +310,7 @@ export default function TranslationViewer({
                 ))
               ) : (
                 <div className="text-center py-8 text-stone-400 text-xs">
-                  문장별 분석 대조 데이터가 존재하지 않습니다.
+                  No sentence comparison data available.
                 </div>
               )}
             </div>
@@ -325,7 +325,7 @@ export default function TranslationViewer({
             className="space-y-4"
           >
             <div className="text-xs text-stone-500 mb-2">
-              문장 내 중요한 핵심 단어들의 헬라어(Greek) / 히브리어(Hebrew) 성경 원어 단어와 어원, 신학적 용례 분석입니다.
+              Analysis of key words, their Greek/Hebrew root terms, transliterations, and theological usage in context.
             </div>
 
             {result.words && result.words.length > 0 ? (
@@ -346,7 +346,7 @@ export default function TranslationViewer({
                       </div>
                       
                       <div className="text-xs text-stone-900 font-semibold mb-1.5">
-                        뜻: {item.koreanMeaning}
+                        Meaning: {item.koreanMeaning}
                       </div>
 
                       {item.explanation && (
@@ -360,7 +360,7 @@ export default function TranslationViewer({
               </div>
             ) : (
               <div className="text-center py-8 text-stone-400 text-xs">
-                원어 분석 단어가 포함되어 있지 않습니다.
+                No original words analyzed in this passage.
               </div>
             )}
           </motion.div>
@@ -374,7 +374,7 @@ export default function TranslationViewer({
             className="space-y-4"
           >
             <div className="text-xs text-stone-500 mb-2">
-              본문 텍스트의 성경 연구에 영감을 주는 깊은 주제적/신학적 성경 교차 참조 구절입니다.
+              Theologically relevant cross-references to broaden your study of the themes in this passage.
             </div>
 
             {result.crossReferences && result.crossReferences.length > 0 ? (
@@ -401,7 +401,7 @@ export default function TranslationViewer({
               </div>
             ) : (
               <div className="text-center py-8 text-stone-400 text-xs">
-                추천 상호참조 구절이 없습니다.
+                No cross-references available for this passage.
               </div>
             )}
           </motion.div>

@@ -49,9 +49,9 @@ export default function HistoryList({
 
   const getModeBadgeLabel = (mode: string) => {
     switch (mode) {
-      case "scholarly": return "학술";
-      case "devotional": return "묵상";
-      default: return "균형";
+      case "scholarly": return "Scholarly";
+      case "devotional": return "Devotional";
+      default: return "Balanced";
     }
   };
 
@@ -61,14 +61,14 @@ export default function HistoryList({
       <div className="p-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BookMarked className="w-4 h-4 text-stone-800" />
-          <h4 className="font-serif font-bold text-stone-800 text-sm">성경 연구 역사 ({history.length})</h4>
+          <h4 className="font-serif font-bold text-stone-800 text-sm">Study History ({history.length})</h4>
         </div>
         {history.length > 0 && (
           <button
             onClick={onClearAll}
             className="text-[10px] text-stone-500 hover:text-red-600 transition-colors font-medium"
           >
-            전체 삭제
+            Clear All
           </button>
         )}
       </div>
@@ -79,7 +79,7 @@ export default function HistoryList({
           <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="본문, 번역, 신학 주석 검색..."
+            placeholder="Search passages, translations, annotations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-8 pr-7 py-1.5 border border-stone-200 rounded-lg text-xs bg-stone-50 focus:bg-white focus:outline-none focus:border-stone-500 transition-all font-sans text-stone-800"
@@ -100,7 +100,7 @@ export default function HistoryList({
         {filteredHistory.length > 0 ? (
           filteredHistory.map((item) => {
             const isActive = item.id === activeId;
-            const dateStr = new Date(item.timestamp).toLocaleDateString("ko-KR", {
+            const dateStr = new Date(item.timestamp).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               hour: "2-digit",
@@ -116,10 +116,15 @@ export default function HistoryList({
                 onClick={() => onSelect(item)}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                     <span className={`text-[9px] font-mono border px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider ${getModeBadgeColor(item.mode)}`}>
                       {getModeBadgeLabel(item.mode)}
                     </span>
+                    {item.targetLang && item.targetLang !== "Korean" && (
+                      <span className="text-[9px] font-mono border px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider bg-amber-50 text-amber-800 border-amber-200">
+                        {item.targetLang}
+                      </span>
+                    )}
                     <span className="text-[10px] text-stone-400 font-mono flex items-center gap-1 font-medium">
                       <Calendar className="w-3 h-3" />
                       {dateStr}
@@ -142,7 +147,7 @@ export default function HistoryList({
                       onDelete(item.id);
                     }}
                     className="p-1 hover:text-red-600 text-stone-400 rounded hover:bg-stone-200/50 transition-all opacity-0 group-hover:opacity-100"
-                    title="기록 삭제"
+                    title="Delete record"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -155,11 +160,11 @@ export default function HistoryList({
           <div className="text-center py-12 px-4 flex flex-col items-center justify-center text-stone-400">
             <FileText className="w-8 h-8 text-stone-200 mb-2" />
             <p className="text-xs font-medium">
-              {searchTerm ? "검색 결과가 없습니다." : "연구 이력이 존재하지 않습니다."}
+              {searchTerm ? "No search results found." : "No study history yet."}
             </p>
             {!searchTerm && (
               <p className="text-[10px] text-stone-500 mt-1 max-w-[180px] leading-relaxed">
-                Logos에서 가져온 영어 본문을 번역하고 저장 버튼을 누르면 여기에 기록됩니다.
+                Your saved translations will appear here to keep track of your studies.
               </p>
             )}
           </div>
