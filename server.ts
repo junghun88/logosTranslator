@@ -100,6 +100,16 @@ async function generateContentWithRetry(
   }
 }
 
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return "";
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Robust, case-insensitive, and cleaned environment variable fetcher to prevent user configuration errors
 function getCleanEnv(keyName: string): string | undefined {
   const upperKey = keyName.toUpperCase();
@@ -447,11 +457,111 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
   // Dedicated API route that returns a beautifully pre-formatted Plain Text
   // perfect for macOS Shortcuts Quick Look / Popup without leaving Logos!
   const handleTranslateToText = async (req: express.Request, res: express.Response) => {
+    const isHtml = req.query.html === "true" || req.body.html === "true";
     try {
       const text = (req.body.text || req.query.text) as string;
       const mode = (req.body.mode || req.query.mode || "balanced") as string;
 
       if (!text || typeof text !== "string" || !text.trim()) {
+        if (isHtml) {
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          const noTextInputHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>원문 없음 - Logos 번역 동반자</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f5f5f4;
+      color: #1c1917;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      width: 100%;
+      max-width: 520px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #b45309;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e7e5e4;
+      padding-bottom: 12px;
+    }
+    .info-list {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #44403c;
+      padding-left: 0;
+      list-style-type: none;
+    }
+    .info-list li {
+      margin-bottom: 12px;
+      padding-left: 14px;
+      position: relative;
+    }
+    .info-list li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #d97706;
+      font-weight: bold;
+    }
+    .btn {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background-color: #1c1917;
+      color: #ffffff;
+      transition: all 0.2s;
+      margin-top: 12px;
+    }
+    .btn:hover {
+      background-color: #44403c;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">⚠️ [입력 원문 없음] Logos 번역 동반자</div>
+    <div style="font-size: 13px; color: #57534e; margin-bottom: 12px; line-height: 1.5;">
+      번역 및 주해할 성경 원문이 전달되지 않았습니다.
+    </div>
+    <ul class="info-list">
+      <li><strong>[추천] 복사(Cmd + C) 후 단축키 실행:</strong> 로고스(Logos) 성경 앱은 자체 엔진 특성상 마우스 블록 지정 텍스트를 macOS 빠른 동작 서비스로 가끔 전달하지 못합니다. 번역할 본문을 드래그한 뒤 Cmd + C로 한 번 복사하시고 단축키를 누르시면 100% 정상 작동합니다.</li>
+      <li><strong>단축어 '클립보드' 설정 적용:</strong> 맥북 '단축어' 앱에서 해당 단축어의 최상단 입력 조건 중 「선택사항이 없는 경우」 항목의 기본값을 <strong>[클립보드]</strong> (또는 '클립보드 콘텐츠')로 변경해 주시면 마우스 드래그와 복사를 자동 인식해 완벽히 호환됩니다.</li>
+    </ul>
+    <button class="btn" onclick="window.close()">닫기</button>
+  </div>
+</body>
+</html>`;
+          return res.status(200).send(noTextInputHtml);
+        }
+
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         let lines: string[] = [];
         lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -572,6 +682,223 @@ Text to translate:
         engineName = "Gemini 초고속 신학 번역";
       }
 
+      if (isHtml) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        const successHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logos 번역 결과</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f5f5f4;
+      color: #1c1917;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      width: 100%;
+      max-width: 520px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e7e5e4;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #44403c;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .subtitle {
+      font-size: 10px;
+      background-color: #f5f5f4;
+      color: #78716c;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #78716c;
+      margin-top: 16px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .text-box {
+      background-color: #fafaf9;
+      border: 1px solid #f5f5f4;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .original {
+      color: #57534e;
+      font-style: italic;
+    }
+    .translation {
+      color: #1c1917;
+      font-weight: 500;
+      border-left: 3px solid #78716c;
+      background-color: #f5f5f4;
+    }
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background-color: #1c1917;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background-color: #44403c;
+    }
+    .btn-secondary {
+      background-color: #ffffff;
+      color: #44403c;
+      border: 1px solid #d6d3d1;
+    }
+    .btn-secondary:hover {
+      background-color: #fafaf9;
+    }
+    .footer {
+      font-size: 11px;
+      color: #a8a29e;
+      text-align: center;
+      margin-top: 16px;
+      border-top: 1px dashed #e7e5e4;
+      padding-top: 12px;
+      line-height: 1.4;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background-color: #1c1917;
+      color: #ffffff;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 20px;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="title">
+        <span>📖</span> LOGOS TRANSLATION COMPANION
+      </div>
+      <div class="subtitle">FAST MODE</div>
+    </div>
+
+    <div class="section-title">Logos 영어 원문</div>
+    <div class="text-box original" id="originalText">${escapeHtml(text)}</div>
+
+    <div class="section-title">${escapeHtml(engineName)}</div>
+    <div class="text-box translation" id="translationText">${escapeHtml(translationResult)}</div>
+
+    <div class="button-group">
+      <button class="btn btn-primary" onclick="copyTranslation()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        번역만 복사
+      </button>
+      <button class="btn btn-secondary" onclick="copyAll()">
+        전체 카드 복사
+      </button>
+      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">닫기</button>
+    </div>
+
+    <div class="footer">
+      ⚡️ 팝업 단축키용 초고속 직역 모드로 실행되었습니다.<br>
+      상세 분석/원어 연구는 번역 동반자 브라우저 앱을 이용해 주세요.
+    </div>
+  </div>
+
+  <div id="toast" class="toast">클립보드에 복사되었습니다!</div>
+
+  <script>
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    function copyTranslation() {
+      const text = document.getElementById('translationText').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('번역문이 클립보드에 복사되었습니다!');
+      }).catch(err => {
+        alert('복사에 실패했습니다: ' + err);
+      });
+    }
+
+    function copyAll() {
+      const orig = document.getElementById('originalText').innerText;
+      const trans = document.getElementById('translationText').innerText;
+      const fullText = "[ Logos 영어 원문 ]\\n" + orig + "\\n\\n[ ${engineName} ]\\n" + trans;
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast('전체 카드가 복사되었습니다!');
+      }).catch(err => {
+        alert('복사에 실패했습니다: ' + err);
+      });
+    }
+  </script>
+</body>
+</html>`;
+        return res.status(200).send(successHtml);
+      }
+
       // Construct a highly polished, classical text card design using text characters
       let lines: string[] = [];
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -595,6 +922,89 @@ Text to translate:
       res.send(lines.join("\n"));
     } catch (error: any) {
       console.error("Text Translation Route Error:", error);
+      
+      if (isHtml) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        const errorHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오류 발생</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f5f5f4;
+      color: #1c1917;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #f87171;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      width: 100%;
+      max-width: 520px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #b91c1c;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .error-box {
+      background-color: #fef2f2;
+      border: 1px solid #fee2e2;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #991b1b;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+    }
+    .btn {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background-color: #1c1917;
+      color: #ffffff;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background-color: #44403c;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">⚠️ [신학 번역 오류 발생]</div>
+    <div class="error-box">${escapeHtml(error?.message || String(error))}</div>
+    <button class="btn" onclick="window.close()">닫기</button>
+  </div>
+</body>
+</html>`;
+        return res.status(200).send(errorHtml);
+      }
+
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       // Return 200 OK so macOS Shortcuts "Get Contents of URL" always succeeds and can display a friendly formatted error card instead of crashing/hanging
       res.status(200).send(`⚠️ [신학 번역 오류 발생]\n\n번역 및 분석에 실패하였습니다.\n\n상세 정보: ${error?.message || "Unknown error"}\n\n도움말:\n1. 이 브라우저의 Settings > Secrets 패널에 GEMINI_API_KEY가 등록되어 있는지 꼭 확인해 주세요.\n2. 현재 구글 Gemini 서버가 일시적으로 지연되고 있을 수 있으니, 잠시 후 다시 시도해 주세요.`);

@@ -50,25 +50,31 @@ export default function MacShortcutGuide() {
     },
     {
       title: "3. 번역 API URL 동작 생성",
-      description: "드래그한 구절을 실시간 신학 해설과 함께 텍스트 카드로 변환해주는 API 서버 주소를 등록합니다.",
+      description: "드래그한 구절을 초고속으로 번역하여 팝업창으로 변환해주는 API 서버 주소를 등록합니다.",
       icon: Cpu,
       instructions: [
         "오른쪽 검색창에서 'URL' 작업을 검색하여 왼쪽 편집창으로 드래그해 놓습니다.",
-        "URL 입력창에 아래에 있는 'API 번역 주소'를 복사하여 붙여넣습니다.",
+        "URL 입력창에 아래에 있는 'API 번역 주소 (웹 팝업 모드 주소)'를 복사하여 붙여넣습니다.",
         "주소 맨 끝 부분에 마우스 우클릭을 하거나 삽입 메뉴에서 '단축어 입력' (Shortcut Input) 변수를 연결해 줍니다."
       ],
-      imageTip: "완성 주소 형태: " + appUrl + "/api/translate-text?text=[단축어 입력]"
+      imageTip: "완성 주소 형태: " + appUrl + "/api/translate-text?html=true&text=[단축어 입력]"
     },
     {
-      title: "4. URL 콘텐츠 가져오기 및 팝업창 띄우기",
-      description: "서버가 리턴해준 고급 포맷팅 텍스트 카드를 읽어와서 macOS 기본 팝업창으로 바로 출력합니다.",
+      title: "4. 팝업창 띄우기 및 편리한 복사 설정 (선택)",
+      description: "인터랙티브 복사 버튼이 달린 아름다운 웹 팝업창을 띄우거나, 자동으로 클립보드에 복사되는 텍스트 팝업창을 구성합니다.",
       icon: Sparkles,
       instructions: [
-        "우측 검색창에서 'URL 콘텐츠 가져오기' (Get Contents of URL) 작업을 검색해서 URL 블록 바로 밑에 배치합니다.",
-        "우측 검색창에서 '결과 보기' (Show Result) 또는 '텍스트 훑어보기' (Quick Look) 작업을 검색해서 가져오기 블록 밑에 연달아 배치합니다.",
-        "결과 보기 항목에 'URL 콘텐츠'가 변수로 잘 지정되어 있는지 확인합니다."
+        "🎯 [선택 A: 복사 버튼이 있는 웹 팝업 모드 - 강력 추천 ⭐️]",
+        "1. 우측 검색창에서 '웹 페이지 보기' (Show Web Page) 또는 '사파리 웹 보기' 작업을 검색해서 추가합니다.",
+        "2. 입력값으로 방금 만든 'URL' 블록을 연결해 줍니다.",
+        "3. 이제 단축키를 누르면 아름다운 팝업창과 함께 [번역만 복사] 및 [전체 카드 복사] 버튼이 활성화되어 클릭 한 번으로 간편하게 복사할 수 있습니다!",
+        "",
+        "📝 [선택 B: 자동으로 클립보드에 저장되는 일반 텍스트 팝업 모드]",
+        "1. 우측 검색창에서 'URL 콘텐츠 가져오기' (Get Contents of URL) 작업을 배치합니다.",
+        "2. 그 바로 밑에 '클립보드에 복사' (Copy to Clipboard) 작업을 추가하여 배치합니다.",
+        "3. 맨 밑에 '결과 보기' (Show Result) 작업을 배치하여 연달아 연결합니다."
       ],
-      imageTip: "이제 브라우저를 열지 않고도 macOS 자체 팝업창에서 깔끔한 원어/주해 카드가 노출됩니다!"
+      imageTip: "웹 팝업 모드(선택 A)를 사용하시면 로고스 성경 본문 위에 둥근 모서리의 예쁜 미니 브라우저 창과 함께 전용 복사 버튼들이 나타납니다."
     },
     {
       title: "5. Cmd + Option + Shift + T 단축키 연결",
@@ -123,7 +129,7 @@ export default function MacShortcutGuide() {
   const steps = activeTab === "native" ? nativeSteps : browserSteps;
 
   const handleCopyTextUrl = () => {
-    const shortcutTemplateUrl = `${appUrl}/api/translate-text?text=`;
+    const shortcutTemplateUrl = `${appUrl}/api/translate-text?html=true&text=`;
     navigator.clipboard.writeText(shortcutTemplateUrl);
     setCopiedTextUrl(true);
     setTimeout(() => setCopiedTextUrl(false), 2000);
@@ -309,7 +315,7 @@ export default function MacShortcutGuide() {
               </button>
             </div>
             <div className="font-mono mt-2.5 bg-white border border-amber-100 p-2 rounded text-[11px] break-all select-all text-stone-700 font-semibold shadow-inner">
-              {appUrl}/api/translate-text?text=
+              {appUrl}/api/translate-text?html=true&text=
             </div>
           </div>
         ) : (
