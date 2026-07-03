@@ -63,9 +63,27 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const textParam = params.get("text");
+    const modeParam = params.get("mode");
+
     if (textParam) {
-      const decodedText = decodeURIComponent(textParam);
+      let decodedText = textParam;
+      try {
+        // Since URLSearchParams.get() already decodes, we try to decode double-encoded values
+        // only if there's a '%' symbol, and we wrap it in a safe try-catch to prevent crash.
+        if (textParam.includes("%")) {
+          decodedText = decodeURIComponent(textParam);
+        }
+      } catch (e) {
+        console.warn("Failed to decode URI component, using raw param:", e);
+        decodedText = textParam;
+      }
+
       setText(decodedText);
+      
+      if (modeParam && (modeParam === "balanced" || modeParam === "scholarly" || modeParam === "devotional")) {
+        setMode(modeParam);
+      }
+
       // Automatically trigger translation with a slight delay to allow rendering
       const timer = setTimeout(() => {
         handleTranslate(decodedText);

@@ -286,27 +286,33 @@ export default function TranslationViewer({
             </div>
 
             <div className="divide-y divide-stone-100">
-              {result.sentences.map((sent, index) => (
-                <div key={index} className="py-4 first:pt-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
-                  <div className="lg:col-span-5">
-                    <div className="flex gap-2.5">
-                      <span className="font-mono text-xs text-stone-400 mt-0.5 font-bold">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <p className="font-serif text-sm text-stone-800 leading-relaxed">{sent.english}</p>
+              {result.sentences && result.sentences.length > 0 ? (
+                result.sentences.map((sent, index) => (
+                  <div key={index} className="py-4 first:pt-0 last:pb-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <div className="lg:col-span-5">
+                      <div className="flex gap-2.5">
+                        <span className="font-mono text-xs text-stone-400 mt-0.5 font-bold">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <p className="font-serif text-sm text-stone-800 leading-relaxed">{sent.english}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="lg:col-span-1 flex lg:justify-center items-center">
+                      <ArrowRight className="w-4 h-4 text-stone-300 hidden lg:block" />
+                      <span className="lg:hidden text-[10px] font-mono text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded font-semibold">번역 매칭</span>
+                    </div>
+
+                    <div className="lg:col-span-6 bg-stone-50/50 p-3 rounded-lg border border-stone-100">
+                      <p className="text-sm font-medium text-stone-950 leading-relaxed pl-1">{sent.korean}</p>
                     </div>
                   </div>
-                  
-                  <div className="lg:col-span-1 flex lg:justify-center items-center">
-                    <ArrowRight className="w-4 h-4 text-stone-300 hidden lg:block" />
-                    <span className="lg:hidden text-[10px] font-mono text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded font-semibold">번역 매칭</span>
-                  </div>
-
-                  <div className="lg:col-span-6 bg-stone-50/50 p-3 rounded-lg border border-stone-100">
-                    <p className="text-sm font-medium text-stone-950 leading-relaxed pl-1">{sent.korean}</p>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-stone-400 text-xs">
+                  문장별 분석 대조 데이터가 존재하지 않습니다.
                 </div>
-              ))}
+              )}
             </div>
           </motion.div>
         )}
