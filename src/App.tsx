@@ -128,15 +128,49 @@ export default function App() {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "번역에 실패하였습니다.");
+      // Safely read response as text to prevent "The string did not match the expected pattern" on JSON errors
+      const responseText = await response.text();
+      
+      let parsedData: any = null;
+      try {
+        if (responseText) {
+          parsedData = JSON.parse(responseText);
+        }
+      } catch (e) {
+        console.warn("Response body is not a valid JSON string:", responseText);
       }
 
-      const data: TranslationResult = await response.json();
-      setResult(data);
+      if (!response.ok) {
+        let cleanMsg = "번역에 실패하였습니다.";
+        if (parsedData && parsedData.error) {
+          cleanMsg = parsedData.error;
+        } else if (responseText) {
+          cleanMsg = responseText;
+        }
+        
+        // Extract inner message if it's nested JSON
+        if (typeof cleanMsg === "string" && cleanMsg.trim().startsWith("{")) {
+          try {
+            const inner = JSON.parse(cleanMsg);
+            if (inner?.error?.message) {
+              cleanMsg = inner.error.message;
+            } else if (inner?.message) {
+              cleanMsg = inner.message;
+            }
+          } catch (e) {
+            // Ignore
+          }
+        }
+        throw new Error(cleanMsg);
+      }
+
+      if (!parsedData) {
+        throw new Error("서버로부터 올바르지 않은 응답이 반환되었습니다.");
+      }
+
+      setResult(parsedData as TranslationResult);
     } catch (err: any) {
-      console.error(err);
+      console.error("Translation request failed:", err);
       setError(err?.message || "번역 및 분석 요청 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);

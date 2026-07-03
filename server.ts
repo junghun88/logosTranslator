@@ -6,6 +6,55 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Safe atob polyfill/interceptor to prevent "The string did not match the expected pattern" DOMException on Node.js side
+const originalAtob = global.atob;
+global.atob = function safeAtob(str: string): string {
+  if (typeof str !== "string") return "";
+  try {
+    // Strip out non-base64 characters and ensure correct padding
+    let cleaned = str.replace(/[^A-Za-z0-9+/=]/g, "");
+    const paddingNeeded = (4 - (cleaned.length % 4)) % 4;
+    if (paddingNeeded > 0) {
+      cleaned = cleaned.padEnd(cleaned.length + paddingNeeded, "=");
+    }
+    return originalAtob(cleaned);
+  } catch (e) {
+    console.warn("[Safe Atob] Falling back to standard Buffer decoding due to invalid base64 input:", e);
+    try {
+      return Buffer.from(str, "base64").toString("binary");
+    } catch (bufferErr) {
+      console.error("[Safe Atob] Both atob and Buffer.from failed to decode:", bufferErr);
+      return "";
+    }
+  }
+};
+
+// Safe btoa polyfill/interceptor
+const originalBtoa = global.btoa;
+global.btoa = function safeBtoa(str: string): string {
+  if (typeof str !== "string") return "";
+  try {
+    return originalBtoa(str);
+  } catch (e) {
+    console.warn("[Safe Btoa] Falling back to standard Buffer encoding:", e);
+    try {
+      return Buffer.from(str, "binary").toString("base64");
+    } catch (err) {
+      return "";
+    }
+  }
+};
+
+// Shared helper function to wrap promises in a timeout
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ]);
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -114,63 +163,95 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
     }
 
     console.log("[Translate API] Invoking Gemini API generateContent...");
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            originalText: { type: Type.STRING },
-            translation: { type: Type.STRING },
-            theologicalInsights: { type: Type.STRING, description: "Deep theological commentary, historical context, and explanation of this passage" },
-            words: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  word: { type: Type.STRING, description: "The English word or phrase being analyzed" },
-                  originalLanguage: { type: Type.STRING, description: "Greek or Hebrew term if applicable (e.g. 'ἀγάπη' or 'חֶסֶ드'), otherwise empty" },
-                  transliteration: { type: Type.STRING, description: "Transliteration of the root word (e.g. 'agape' or 'chesed')" },
-                  koreanMeaning: { type: Type.STRING, description: "Korean translation or equivalent theological term" },
-                  explanation: { type: Type.STRING, description: "Grammatical nuance, dictionary meaning, or context-specific nuance in this passage" }
-                },
-                required: ["word", "koreanMeaning"]
-              },
-              description: "List of key theological, biblical, or grammatical terms to study"
+    let response;
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        originalText: { type: Type.STRING },
+        translation: { type: Type.STRING },
+        theologicalInsights: { type: Type.STRING, description: "Deep theological commentary, historical context, and explanation of this passage" },
+        words: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              word: { type: Type.STRING, description: "The English word or phrase being analyzed" },
+              originalLanguage: { type: Type.STRING, description: "Greek or Hebrew term if applicable (e.g. 'ἀγάπη' or 'חֶסֶ드'), otherwise empty" },
+              transliteration: { type: Type.STRING, description: "Transliteration of the root word (e.g. 'agape' or 'chesed')" },
+              koreanMeaning: { type: Type.STRING, description: "Korean translation or equivalent theological term" },
+              explanation: { type: Type.STRING, description: "Grammatical nuance, dictionary meaning, or context-specific nuance in this passage" }
             },
-            sentences: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  english: { type: Type.STRING, description: "The English sentence or distinct phrase" },
-                  korean: { type: Type.STRING, description: "The translated Korean sentence or distinct phrase" }
-                },
-                required: ["english", "korean"]
-              },
-              description: "Sentence-by-sentence side-by-side comparison for easy reading and grammar matching"
-            },
-            crossReferences: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  citation: { type: Type.STRING, description: "Bible verse citation (e.g., Romans 5:8)" },
-                  englishText: { type: Type.STRING, description: "English text of the cross-reference" },
-                  koreanText: { type: Type.STRING, description: "Korean translated text or official translation of the cross-reference" }
-                },
-                required: ["citation", "koreanText"]
-              },
-              description: "2-3 highly relevant biblical cross-references that support the theological themes of the text"
-            }
+            required: ["word", "koreanMeaning"]
           },
-          required: ["originalText", "translation", "theologicalInsights", "words", "sentences"]
+          description: "List of key theological, biblical, or grammatical terms to study"
+        },
+        sentences: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              english: { type: Type.STRING, description: "The English sentence or distinct phrase" },
+              korean: { type: Type.STRING, description: "The translated Korean sentence or distinct phrase" }
+            },
+            required: ["english", "korean"]
+          },
+          description: "Sentence-by-sentence side-by-side comparison for easy reading and grammar matching"
+        },
+        crossReferences: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              citation: { type: Type.STRING, description: "Bible verse citation (e.g., Romans 5:8)" },
+              englishText: { type: Type.STRING, description: "English text of the cross-reference" },
+              koreanText: { type: Type.STRING, description: "Korean translated text or official translation of the cross-reference" }
+            },
+            required: ["citation", "koreanText"]
+          },
+          description: "2-3 highly relevant biblical cross-references that support the theological themes of the text"
         }
+      },
+      required: ["originalText", "translation", "theologicalInsights", "words", "sentences"]
+    };
+
+    try {
+      console.log("[Translate API] Trying primary model: gemini-3.5-flash...");
+      response = await withTimeout(
+        ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: prompt,
+          config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema
+          }
+        }),
+        20000, // 20-second timeout
+        "구글 Gemini API 요청 시간 초과 (20초). 현재 트래픽이 몰려 서버 응답이 지연되고 있습니다. 잠시 후 '다시 시도하기'를 눌러주세요."
+      );
+    } catch (primaryErr: any) {
+      console.warn("[Translate API] Primary model (gemini-3.5-flash) failed, returned 503, or timed out. Attempting failover to gemini-2.5-flash...", primaryErr?.message || primaryErr);
+      
+      try {
+        response = await withTimeout(
+          ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+              systemInstruction,
+              responseMimeType: "application/json",
+              responseSchema
+            }
+          }),
+          20000, // 20-second timeout
+          "복구용 Gemini API 요청 시간 초과 (20초). 현재 전체 구글 인공지능 서버 통신량이 극도로 많습니다. 잠시만 대기 후 다시 시도해 주세요."
+        );
+        console.log("[Translate API] Failover to gemini-2.5-flash succeeded.");
+      } catch (fallbackErr: any) {
+        console.error("[Translate API] Fallback model (gemini-2.5-flash) also failed:", fallbackErr?.message || fallbackErr);
+        throw fallbackErr;
       }
-    });
+    }
 
     const responseText = response.text;
     if (!responseText) {
@@ -187,7 +268,41 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
       cleanedText = cleanedText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
     }
 
-    const parsedResponse = JSON.parse(cleanedText);
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(cleanedText);
+    } catch (jsonErr) {
+      console.warn("[Translate API] JSON parsing failed initially, attempting robust JSON extraction...", jsonErr);
+      
+      // Attempt to extract JSON from any block (in case the model didn't perfectly trim backticks)
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsedResponse = JSON.parse(jsonMatch[0]);
+          console.log("[Translate API] Successfully extracted and parsed JSON using regex fallback.");
+        } catch (innerErr) {
+          try {
+            // Escape invalid control characters often found in raw text output
+            const repaired = jsonMatch[0].replace(/[\u0000-\u001F\u007F-\u009F]/g, (c) => {
+              switch (c) {
+                case '\n': return '\\n';
+                case '\r': return '\\r';
+                case '\t': return '\\t';
+                default: return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+              }
+            });
+            parsedResponse = JSON.parse(repaired);
+            console.log("[Translate API] Successfully parsed JSON after control character escaping.");
+          } catch (repairErr) {
+            console.error("[Translate API] Robust parsing fallback failed:", repairErr);
+            throw new Error("신학 분석 데이터를 분석 가능한 JSON 데이터로 변환하지 못했습니다. 다시 한 번 요청해 주세요.");
+          }
+        }
+      } else {
+        throw new Error("인공지능 응답에서 구조화된 신학 데이터 블록을 찾지 못했습니다.");
+      }
+    }
+    
     console.log("[Translate API] JSON parsed successfully.");
     
     // Inject DeepL status and translation into response so client can display it
@@ -210,7 +325,22 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
       res.json(result);
     } catch (error: any) {
       console.error("Translation API Error:", error);
-      res.status(500).json({ error: error?.message || "Failed to translate text" });
+      
+      // Attempt to extract clean message from stringified API errors
+      let errMsg = error?.message || "Failed to translate text";
+      if (typeof errMsg === "string" && errMsg.trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(errMsg);
+          if (parsed?.error?.message) {
+            errMsg = parsed.error.message;
+          } else if (parsed?.message) {
+            errMsg = parsed.message;
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+      res.status(500).json({ error: errMsg });
     }
   });
 
@@ -221,8 +351,9 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
       const text = (req.body.text || req.query.text) as string;
       const mode = (req.body.mode || req.query.mode || "balanced") as string;
 
-      if (!text || typeof text !== "string") {
-        return res.status(400).send("오류: 번역할 텍스트가 입력되지 않았습니다.");
+      if (!text || typeof text !== "string" || !text.trim()) {
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        return res.status(200).send("⚠️ [입력 원문 없음]\n\n번역 및 주해할 원문이 입력되지 않았습니다.\n\n맥북 Logos 성경 앱에서 본문이나 주석을 마우스 드래그로 블록 지정한 상태에서 단축키를 눌러주시거나, 웹 브라우저에서 직접 입력해 주세요.");
       }
 
       const result = await translateAndAnalyzeCore(text, mode);
@@ -298,7 +429,8 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
     } catch (error: any) {
       console.error("Text Translation Route Error:", error);
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.status(500).send(`오류: 번역 및 분석에 실패하였습니다.\n\n상세 정보: ${error?.message || "Unknown error"}`);
+      // Return 200 OK so macOS Shortcuts "Get Contents of URL" always succeeds and can display a friendly formatted error card instead of crashing/hanging
+      res.status(200).send(`⚠️ [신학 번역 오류 발생]\n\n번역 및 분석에 실패하였습니다.\n\n상세 정보: ${error?.message || "Unknown error"}\n\n도움말:\n1. 이 브라우저의 Settings > Secrets 패널에 GEMINI_API_KEY가 등록되어 있는지 꼭 확인해 주세요.\n2. 현재 구글 Gemini 서버가 일시적으로 지연되고 있을 수 있으니, 잠시 후 다시 시도해 주세요.`);
     }
   };
 
