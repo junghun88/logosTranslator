@@ -55,6 +55,51 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
   ]);
 }
 
+// Retrying wrapper for generateContent to handle transient Gemini API issues (e.g., 503 high demand or overloaded)
+async function generateContentWithRetry(
+  ai: GoogleGenAI,
+  options: {
+    model: string;
+    contents: any;
+    config: any;
+  },
+  timeoutMs: number = 20000,
+  timeoutMessage: string = "구글 Gemini API 요청 시간 초과"
+): Promise<any> {
+  const maxRetries = 2;
+  let delay = 1000; // 1 second base delay
+
+  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+    try {
+      return await withTimeout(
+        ai.models.generateContent(options),
+        timeoutMs,
+        timeoutMessage
+      );
+    } catch (error: any) {
+      const errStr = String(error?.message || error || "");
+      const errStatus = error?.status;
+      
+      const isTransient = 
+        errStr.includes("503") || 
+        errStr.includes("high demand") || 
+        errStr.includes("UNAVAILABLE") || 
+        errStr.includes("overloaded") ||
+        errStr.includes("temporary") ||
+        errStatus === 503 ||
+        errStatus === "UNAVAILABLE";
+
+      if (isTransient && attempt <= maxRetries) {
+        console.warn(`[Translate API] Attempt ${attempt} failed with transient error: ${errStr}. Retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 1.5; // Backoff
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 // Robust, case-insensitive, and cleaned environment variable fetcher to prevent user configuration errors
 function getCleanEnv(keyName: string): string | undefined {
   const upperKey = keyName.toUpperCase();
@@ -242,8 +287,9 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
 
     try {
       console.log("[Translate API] Trying primary model: gemini-3.5-flash...");
-      response = await withTimeout(
-        ai.models.generateContent({
+      response = await generateContentWithRetry(
+        ai,
+        {
           model: "gemini-3.5-flash",
           contents: prompt,
           config: {
@@ -251,7 +297,7 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
             responseMimeType: "application/json",
             responseSchema
           }
-        }),
+        },
         20000, // 20-second timeout
         "구글 Gemini API 요청 시간 초과 (20초). 현재 트래픽이 몰려 서버 응답이 지연되고 있습니다. 잠시 후 '다시 시도하기'를 눌러주세요."
       );
@@ -259,8 +305,9 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
       console.warn("[Translate API] Primary model (gemini-3.5-flash) failed, returned 503, or timed out. Attempting failover to gemini-2.5-flash...", primaryErr?.message || primaryErr);
       
       try {
-        response = await withTimeout(
-          ai.models.generateContent({
+        response = await generateContentWithRetry(
+          ai,
+          {
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
@@ -268,7 +315,7 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
               responseMimeType: "application/json",
               responseSchema
             }
-          }),
+          },
           20000, // 20-second timeout
           "복구용 Gemini API 요청 시간 초과 (20초). 현재 전체 구글 인공지능 서버 통신량이 극도로 많습니다. 잠시만 대기 후 다시 시도해 주세요."
         );
@@ -406,7 +453,33 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
 
       if (!text || typeof text !== "string" || !text.trim()) {
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
-        return res.status(200).send("⚠️ [입력 원문 없음]\n\n번역 및 주해할 원문이 입력되지 않았습니다.\n\n맥북 Logos 성경 앱에서 본문이나 주석을 마우스 드래그로 블록 지정한 상태에서 단축키를 눌러주시거나, 웹 브라우저에서 직접 입력해 주세요.");
+        let lines: string[] = [];
+        lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        lines.push("⚠️ [입력 원문 없음] Logos 번역 동반자");
+        lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        lines.push("");
+        lines.push("번역 및 주해할 성경 원문이 전달되지 않았습니다.");
+        lines.push("");
+        lines.push("💡 원인 및 빠른 해결 방법:");
+        lines.push("");
+        lines.push("1. [추천] 복사(Cmd + C) 후 단축키 실행");
+        lines.push("   로고스(Logos) 성경 앱은 자체 엔진 특성상 마우스 블록 지정");
+        lines.push("   텍스트를 macOS 빠른 동작 서비스로 가끔 전달하지 못합니다.");
+        lines.push("   번역할 본문을 마우스로 드래그한 뒤 Cmd + C로 한 번 복사하시고");
+        lines.push("   단축키를 누르시면 100% 정상적으로 번역 결과가 나타납니다.");
+        lines.push("");
+        lines.push("2. 단축어 '클립보드' 설정 적용");
+        lines.push("   맥북 '단축어' 앱에서 해당 단축어의 최상단 입력 조건 중");
+        lines.push("   「선택사항이 없는 경우」 항목의 기본값을");
+        lines.push("   [클립보드] (또는 '클립보드 콘텐츠')로 선택해 주시면 마우스 드래그와");
+        lines.push("   복사(Cmd+C)를 모두 스마트하게 자동 인식하여 가장 완벽하게 작동합니다.");
+        lines.push("");
+        lines.push("3. 브라우저(번역 동반자 홈 화면)에서 직접 입력");
+        lines.push("   서버 메인 화면에 접속하여 입력창에 직접 원문을 붙여넣고");
+        lines.push("   '신학적 대조 번역 실행' 버튼을 누르셔도 동일하게 확인 가능합니다.");
+        lines.push("");
+        lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        return res.status(200).send(lines.join("\n"));
       }
 
       const result = await translateAndAnalyzeCore(text, mode);
