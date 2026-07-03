@@ -63,7 +63,7 @@ async function generateContentWithRetry(
     contents: any;
     config: any;
   },
-  timeoutMs: number = 20000,
+  timeoutMs: number = 60000,
   timeoutMessage: string = "구글 Gemini API 요청 시간 초과"
 ): Promise<any> {
   const maxRetries = 2;
@@ -298,8 +298,8 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
             responseSchema
           }
         },
-        20000, // 20-second timeout
-        "구글 Gemini API 요청 시간 초과 (20초). 현재 트래픽이 몰려 서버 응답이 지연되고 있습니다. 잠시 후 '다시 시도하기'를 눌러주세요."
+        60000, // 60-second timeout
+        "구글 Gemini API 요청 시간 초과 (60초). 번역 및 분석 내용이 길거나 현재 구글 서버 트래픽이 일시적으로 매우 높은 상태입니다. 다시 한 번 번역 단축키를 누르거나 잠시 후 '다시 시도하기'를 클릭해 주세요."
       );
     } catch (primaryErr: any) {
       console.warn("[Translate API] Primary model (gemini-3.5-flash) failed, returned 503, or timed out. Attempting failover to gemini-2.5-flash...", primaryErr?.message || primaryErr);
@@ -316,8 +316,8 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
               responseSchema
             }
           },
-          20000, // 20-second timeout
-          "복구용 Gemini API 요청 시간 초과 (20초). 현재 전체 구글 인공지능 서버 통신량이 극도로 많습니다. 잠시만 대기 후 다시 시도해 주세요."
+          60000, // 60-second timeout
+          "복구용 Gemini API 요청 시간 초과 (60초). 현재 인공지능 서버 트래픽이 극도로 많거나 원문 본문의 분석량이 매우 많습니다. 잠시만 대기 후 다시 시도해 주세요."
         );
         console.log("[Translate API] Failover to gemini-2.5-flash succeeded.");
       } catch (fallbackErr: any) {
