@@ -1,0 +1,6 @@
+{
+  "name": "Logos Translation Assistant",
+  "description": "An elegant translation and theological study companion for the macOS Logos Bible App. It translates and analyzes complex biblical text from English to Korean using Gemini, complete with custom macOS Shortcut integration instructions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

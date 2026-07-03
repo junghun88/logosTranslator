@@ -1,0 +1,197 @@
+import express from "express";
+import path from "path";
+import { createServer as createViteServer } from "vite";
+import { GoogleGenAI, Type } from "@google/genai";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  app.use(express.json());
+
+  // API route for translation and theological analysis
+  app.post("/api/translate", async (req, res) => {
+    try {
+      const { text, mode } = req.body;
+      if (!text || typeof text !== "string") {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is not configured. Please add it in the Settings secrets panel." });
+      }
+
+      // Check and invoke DeepL if key is configured
+      let deeplTranslation: string | null = null;
+      let deeplError: string | null = null;
+      const deeplKey = process.env.DEEPL_API_KEY;
+
+      if (deeplKey) {
+        try {
+          const isFree = deeplKey.endsWith(":fx");
+          const deeplUrl = isFree 
+            ? "https://api-free.deepl.com/v2/translate" 
+            : "https://api.deepl.com/v2/translate";
+
+          const deeplRes = await fetch(deeplUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `DeepL-Auth-Key ${deeplKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              text: [text],
+              target_lang: "KO"
+            })
+          });
+
+          if (deeplRes.ok) {
+            const deeplData = await deeplRes.json() as { translations: { text: string }[] };
+            if (deeplData?.translations?.[0]?.text) {
+              deeplTranslation = deeplData.translations[0].text;
+            }
+          } else {
+            const errText = await deeplRes.text();
+            console.error(`DeepL API responded with status ${deeplRes.status}: ${errText}`);
+            deeplError = `DeepL API Error (Status ${deeplRes.status})`;
+          }
+        } catch (err: any) {
+          console.error("Failed to connect to DeepL API:", err);
+          deeplError = err?.message || "DeepL Connection Error";
+        }
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      // Formulate custom system instructions based on study mode
+      let systemInstruction = `You are an expert biblical translator, theologian, and biblical languages scholar (Greek and Hebrew). 
+Your task is to translate theological, biblical, or commentary text from English to Korean.
+Analyze the source text carefully to provide the most contextually accurate and elegant Korean translation.
+For biblical verses or theological commentary, maintain standard Korean Christian terminology (such as '하나님', '예수 그리스도', '구원', '은혜', '성경', etc.) unless the literary context suggests a broader translation.
+Provide deep, high-fidelity theological analysis and explain key terms, including their Greek/Hebrew roots, transliterations, and specific nuances in this passage.`;
+
+      if (mode === "scholarly") {
+        systemInstruction += "\nFocus on high-level scholarly parsing, original languages (Greek/Hebrew word studies), and academic theological insights.";
+      } else if (mode === "devotional") {
+        systemInstruction += "\nFocus on warm, pastoral, devotional application, clear and accessible Korean translation, and practical spiritual insights.";
+      } else {
+        systemInstruction += "\nFocus on a balanced, precise literary translation and clear structural side-by-side parsing.";
+      }
+
+      let prompt = `Please translate and analyze the following text:
+"${text}"`;
+
+      if (deeplTranslation) {
+        prompt += `\n\nNote: A precise, literal translation from the DeepL API is provided below for your reference. You should use it to inform your theological translation, compare styles, and align the sentence-by-sentence analysis structure:
+"${deeplTranslation}"`;
+      }
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              originalText: { type: Type.STRING },
+              translation: { type: Type.STRING },
+              theologicalInsights: { type: Type.STRING, description: "Deep theological commentary, historical context, and explanation of this passage" },
+              words: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    word: { type: Type.STRING, description: "The English word or phrase being analyzed" },
+                    originalLanguage: { type: Type.STRING, description: "Greek or Hebrew term if applicable (e.g. 'ἀγάπη' or 'חֶסֶד'), otherwise empty" },
+                    transliteration: { type: Type.STRING, description: "Transliteration of the root word (e.g. 'agape' or 'chesed')" },
+                    koreanMeaning: { type: Type.STRING, description: "Korean translation or equivalent theological term" },
+                    explanation: { type: Type.STRING, description: "Grammatical nuance, dictionary meaning, or context-specific nuance in this passage" }
+                  },
+                  required: ["word", "koreanMeaning"]
+                },
+                description: "List of key theological, biblical, or grammatical terms to study"
+              },
+              sentences: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    english: { type: Type.STRING, description: "The English sentence or distinct phrase" },
+                    korean: { type: Type.STRING, description: "The translated Korean sentence or distinct phrase" }
+                  },
+                  required: ["english", "korean"]
+                },
+                description: "Sentence-by-sentence side-by-side comparison for easy reading and grammar matching"
+              },
+              crossReferences: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    citation: { type: Type.STRING, description: "Bible verse citation (e.g., Romans 5:8)" },
+                    englishText: { type: Type.STRING, description: "English text of the cross-reference" },
+                    koreanText: { type: Type.STRING, description: "Korean translated text or official translation of the cross-reference" }
+                  },
+                  required: ["citation", "koreanText"]
+                },
+                description: "2-3 highly relevant biblical cross-references that support the theological themes of the text"
+              }
+            },
+            required: ["originalText", "translation", "theologicalInsights", "words", "sentences"]
+          }
+        }
+      });
+
+      const responseText = response.text;
+      if (!responseText) {
+        throw new Error("Empty response from Gemini");
+      }
+
+      const parsedResponse = JSON.parse(responseText.trim());
+      
+      // Inject DeepL status and translation into response so client can display it
+      parsedResponse.deeplTranslation = deeplTranslation;
+      parsedResponse.deeplUsed = !!deeplTranslation;
+      parsedResponse.deeplError = deeplError;
+
+      res.json(parsedResponse);
+    } catch (error: any) {
+      console.error("Translation API Error:", error);
+      res.status(500).json({ error: error?.message || "Failed to translate text" });
+    }
+  });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
