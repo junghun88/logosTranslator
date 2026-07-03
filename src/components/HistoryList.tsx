@@ -9,6 +9,7 @@ import {
   XCircle,
   FileText
 } from "lucide-react";
+import { useLanguage } from "../lib/LanguageContext";
 
 interface HistoryListProps {
   history: SavedTranslation[];
@@ -25,6 +26,7 @@ export default function HistoryList({
   onDelete,
   onClearAll
 }: HistoryListProps) {
+  const { t, uiLang } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredHistory = history.filter(item => {
@@ -49,9 +51,9 @@ export default function HistoryList({
 
   const getModeBadgeLabel = (mode: string) => {
     switch (mode) {
-      case "scholarly": return "Scholarly";
-      case "devotional": return "Devotional";
-      default: return "Balanced";
+      case "scholarly": return t("modeScholarly");
+      case "devotional": return t("modeDevotional");
+      default: return t("modeBalanced");
     }
   };
 
@@ -61,14 +63,16 @@ export default function HistoryList({
       <div className="p-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BookMarked className="w-4 h-4 text-stone-800" />
-          <h4 className="font-serif font-bold text-stone-800 text-sm">Study History ({history.length})</h4>
+          <h4 className="font-serif font-bold text-stone-800 text-sm">
+            {t("historyTitle")} ({history.length})
+          </h4>
         </div>
         {history.length > 0 && (
           <button
             onClick={onClearAll}
-            className="text-[10px] text-stone-500 hover:text-red-600 transition-colors font-medium"
+            className="text-[10px] text-stone-500 hover:text-red-600 transition-colors font-medium font-sans"
           >
-            Clear All
+            {t("clearAll")}
           </button>
         )}
       </div>
@@ -79,7 +83,7 @@ export default function HistoryList({
           <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search passages, translations, annotations..."
+            placeholder={t("searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-8 pr-7 py-1.5 border border-stone-200 rounded-lg text-xs bg-stone-50 focus:bg-white focus:outline-none focus:border-stone-500 transition-all font-sans text-stone-800"
@@ -100,7 +104,7 @@ export default function HistoryList({
         {filteredHistory.length > 0 ? (
           filteredHistory.map((item) => {
             const isActive = item.id === activeId;
-            const dateStr = new Date(item.timestamp).toLocaleDateString("en-US", {
+            const dateStr = new Date(item.timestamp).toLocaleDateString(uiLang === "ko" ? "ko-KR" : "en-US", {
               month: "short",
               day: "numeric",
               hour: "2-digit",
@@ -147,7 +151,7 @@ export default function HistoryList({
                       onDelete(item.id);
                     }}
                     className="p-1 hover:text-red-600 text-stone-400 rounded hover:bg-stone-200/50 transition-all opacity-0 group-hover:opacity-100"
-                    title="Delete record"
+                    title={t("deleteRecord")}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -160,11 +164,11 @@ export default function HistoryList({
           <div className="text-center py-12 px-4 flex flex-col items-center justify-center text-stone-400">
             <FileText className="w-8 h-8 text-stone-200 mb-2" />
             <p className="text-xs font-medium">
-              {searchTerm ? "No search results found." : "No study history yet."}
+              {searchTerm ? t("noSearchResults") : t("noHistory")}
             </p>
             {!searchTerm && (
               <p className="text-[10px] text-stone-500 mt-1 max-w-[180px] leading-relaxed">
-                Your saved translations will appear here to keep track of your studies.
+                {t("historyTip")}
               </p>
             )}
           </div>

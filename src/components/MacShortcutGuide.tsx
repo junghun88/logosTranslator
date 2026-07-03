@@ -10,12 +10,13 @@ import {
   ChevronRight,
   ChevronLeft,
   Sparkles,
-  Layers,
   Cpu,
   Monitor
 } from "lucide-react";
+import { useLanguage } from "../lib/LanguageContext";
 
 export default function MacShortcutGuide() {
+  const { uiLang } = useLanguage();
   const [activeTab, setActiveTab] = useState<"native" | "browser">("native");
   const [activeStep, setActiveStep] = useState(0);
   const [copiedTextUrl, setCopiedTextUrl] = useState(false);
@@ -23,7 +24,7 @@ export default function MacShortcutGuide() {
 
   const appUrl = window.location.origin;
 
-  const nativeSteps = [
+  const nativeStepsEn = [
     {
       title: "1. Open macOS Shortcuts App",
       description: "Launch the native macOS 'Shortcuts' app to design a new one-click translation automation.",
@@ -89,7 +90,73 @@ export default function MacShortcutGuide() {
     }
   ];
 
-  const browserSteps = [
+  const nativeStepsKo = [
+    {
+      title: "1. macOS 단축어 앱 열기",
+      description: "클릭 한 번으로 고정밀 번역 및 주해 팝업을 연동하기 위해 macOS 기본 '단축어' 앱을 실행합니다.",
+      icon: Compass,
+      instructions: [
+        "Spotlight(Cmd + Space)을 열어 '단축어' 혹은 'Shortcuts'를 검색해 실행합니다.",
+        "우측 상단의 '+' 버튼을 눌러 새로운 단축어를 생성합니다.",
+        "단축어 이름을 'Logos Translator' 또는 원하는 이름으로 설정하세요."
+      ],
+      imageTip: "단축어 앱은 macOS Monterey(몬터레이) 이상의 기기에 기본적으로 설치되어 있습니다."
+    },
+    {
+      title: "2. 빠른 동작 설정 및 클립보드 예외 처리",
+      description: "로고스 본문 드래그 전달이 누락되었을 때를 대비해, 빠른 동작 메뉴 등록 및 클립보드 자동 가져오기(백업)를 설정합니다.",
+      icon: Settings,
+      instructions: [
+        "우측 설정 패널에서 'Shortcut Details' (슬라이더 조절 아이콘) 버튼을 누릅니다.",
+        "'빠른 동작으로 사용(Use as Quick Action)' 및 '서비스 메뉴(Services Menu)'를 활성화합니다.",
+        "메인 편집창으로 돌아와 첫 번째 입력 동작: 'Quick Actions에서 [텍스트] 받기'를 확인합니다.",
+        "해당 줄 끝에 있는 '(입력이 없는 경우)' 또는 '(if there's no input)' 텍스트를 클릭합니다.",
+        "드롭다운 목록에서 **[클립보드] (Clipboard)**를 예외(Fallback)로 설정해 줍니다!"
+      ],
+      imageTip: "이렇게 하면 드래그 전송이 안 되더라도, 원하는 구절을 Cmd+C로 복사한 후 단축키만 누르면 즉시 번역됩니다."
+    },
+    {
+      title: "3. URL 동작 블록 추가",
+      description: "초고속 실시간 번역 및 분석 카드를 생성해 줄 API 주소를 등록합니다.",
+      icon: Cpu,
+      instructions: [
+        "우측의 동작 라이브러리 검색창에 'URL'을 검색해 편집창으로 드래그합니다.",
+        "이 페이지 하단에 제공되는 '메서드 1 연동 주소'를 그대로 복사해 URL 창에 붙여넣습니다.",
+        "주소 맨 끝에 마우스 오른쪽 버튼을 누르고 '단축어 입력 (Shortcut Input)' 변수를 대입하세요."
+      ],
+      imageTip: "최종 연동 주소 형태: " + appUrl + "/api/translate-text?html=true&text=[Shortcut Input]"
+    },
+    {
+      title: "4. 웹 페이지 표시 (팝업 창 연동)",
+      description: "로고스 성경 프로그램 위에 직접 복사 버튼이 포함된 팝업 카드가 뜨도록 설정합니다.",
+      icon: Sparkles,
+      instructions: [
+        "🎯 [옵션 A: 웹 팝업 모드 - 매우 권장 ⭐️]",
+        "1. 우측 동작 라이브러리에서 '웹 페이지 표시' 또는 'Show Web Page'를 검색해 추가합니다.",
+        "2. 이전 단계에서 생성한 'URL' 블록을 입력 값으로 지정하세요.",
+        "3. 이제 단축키를 누르면 아름다운 반투명 팝업창에 개별 복사 버튼이 포함된 주해 카드가 뜹니다.",
+        "",
+        "📝 [옵션 B: 백그라운드 텍스트 복사 모드]",
+        "1. 'URL 콘텐츠 가져오기(Get Contents of URL)' 블록을 추가합니다.",
+        "2. 바로 아래 '클립보드에 복사(Copy to Clipboard)' 블록을 둡니다.",
+        "3. 마지막에 '결과 표시(Show Result)' 블록을 배치하면 알림창 형식으로 요약이 전달됩니다."
+      ],
+      imageTip: "웹 팝업 모드(옵션 A)를 선택하면 로고스 성경 앱 화면 위에 둥근 모서리의 예쁜 플로팅 카드가 바로 나타납니다."
+    },
+    {
+      title: "5. 글로벌 단축키 지정 (Cmd + Option + Shift + T)",
+      description: "로고스에서 글을 읽다 언제든지 바로 번역을 띄울 수 있도록 전역 단축키를 설정합니다.",
+      icon: Keyboard,
+      instructions: [
+        "우측 설정 패널의 단축어 세부 정보 탭으로 돌아갑니다.",
+        "'키보드 단축키 추가' 버튼을 클릭한 뒤, 키보드에서 'Cmd + Option + Shift + T'를 동시에 누릅니다.",
+        "단축어 편집창을 닫으면 모든 준비가 끝납니다!"
+      ],
+      imageTip: "로고스 성경 앱에서 영어 구절을 마우스로 긁은 뒤 Cmd + Option + Shift + T를 누르시면 1초 만에 팝업 주해가 실행됩니다."
+    }
+  ];
+
+  const browserStepsEn = [
     {
       title: "1. Create Shortcut & Enable Clipboard",
       description: "Establish the basic shortcut framework to transmit copied text safely from Logos to your web browser.",
@@ -121,10 +188,48 @@ export default function MacShortcutGuide() {
         "In the right-hand details tab, assign the keyboard combination 'Cmd + Option + Shift + T'.",
         "Your shortcut is complete! Select text in Logos, trigger the hotkey, and watch the browser compile your results."
       ],
-      imageTip: "The browser workspace offers comprehensive tabbed modules, history saving, and original lexicon search."
+      imageTip: "The browser workspace offers comprehensive tabbed modules, history saving, and original lexicon study."
     }
   ];
 
+  const browserStepsKo = [
+    {
+      title: "1. 단축어 생성 및 클립보드 예외 처리",
+      description: "복사된 텍스트를 로고스에서 웹 브라우저로 전송해 줄 기본 단축어 프레임워크를 마련합니다.",
+      icon: Compass,
+      instructions: [
+        "macOS '단축어' 앱을 열고 우측 상단의 '+' 버튼을 클릭합니다.",
+        "우측 설정 패널에서 '빠른 동작으로 사용' 및 '서비스 메뉴'를 활성화합니다.",
+        "'Quick Actions에서 [텍스트] 받기'를 선택합니다.",
+        "'(입력이 없는 경우)' 부분을 누르고 **[클립보드]**를 백업 소스로 지정하세요."
+      ],
+      imageTip: "텍스트 드래그 인식 범위를 벗어난 경우 복사-붙여넣기 상태에서 바로 작동되도록 보완해 줍니다."
+    },
+    {
+      title: "2. 브라우저 새 창 열기 URL 등록",
+      description: "전체 브라우저 작업창으로 텍스트를 담아 새 탭을 띄우는 동작을 추가합니다.",
+      icon: ExternalLink,
+      instructions: [
+        "우측 검색창에 'URL'을 입력해 편집창에 등록합니다.",
+        "이 가이드 아래에 제공되는 '웹 번역 앱 주소'를 붙여넣고 뒤에 '단축어 입력' 변수를 덧붙입니다.",
+        "그 바로 아래에 'URL 열기(Open URLs)' 블록을 끌어다 추가하세요."
+      ],
+      imageTip: "최종 연동 주소 형태: " + appUrl + "/?text=[Shortcut Input]"
+    },
+    {
+      title: "3. 글로벌 단축키 지정 (Cmd + Option + Shift + T)",
+      description: "브라우저 기반 작업 환경을 빠르게 실행할 전역 핫키를 매핑합니다.",
+      icon: Keyboard,
+      instructions: [
+        "우측의 세부 정보 탭에서 단축키 지정창을 열고 'Cmd + Option + Shift + T'를 누릅니다.",
+        "이제 단축어가 완성되었습니다! 로고스 앱에서 단축키만 누르면 브라우저의 고기능 대조 스페이스가 실행됩니다."
+      ],
+      imageTip: "브라우저 작업창 환경은 여러 탭 보기, 주해 기록 영구 보관, 깊이 있는 신학 원어 연구 기능을 지원합니다."
+    }
+  ];
+
+  const nativeSteps = uiLang === "ko" ? nativeStepsKo : nativeStepsEn;
+  const browserSteps = uiLang === "ko" ? browserStepsKo : browserStepsEn;
   const steps = activeTab === "native" ? nativeSteps : browserSteps;
 
   const handleCopyTextUrl = () => {
@@ -149,16 +254,114 @@ export default function MacShortcutGuide() {
     setActiveStep(0);
   };
 
+  // Localized texts
+  const labels = {
+    title: {
+      en: "macOS Logos Keyboard Shortcut Integration Guide",
+      ko: "macOS 로고스 성경 단축키 연동 가이드",
+    },
+    desc: {
+      en: "Translate any selected English text in your Logos Bible app instantly by mapping a system-wide hotkey: Cmd + Option + Shift + T.",
+      ko: "로고스 성경 인앱에서 영어 단어를 드래그하고 전역 단축키인 Cmd + Option + Shift + T를 누르는 즉시 번역 결과를 소환합니다.",
+    },
+    tabNative: {
+      en: "Method 1: Native Floating Popup (Highly Recommended - No Browser Needed)",
+      ko: "방법 1: 네이티브 투명 플로팅 팝업 (매우 권장 - 별도 브라우저창 없음)",
+    },
+    tabBrowser: {
+      en: "Method 2: Full Interactive Browser Workspace",
+      ko: "방법 2: 고기능 브라우저 연동 작업 스페이스",
+    },
+    stepLabel: {
+      en: "Step",
+      ko: "단계",
+    },
+    previousBtn: {
+      en: "Previous",
+      ko: "이전 단계",
+    },
+    nextBtn: {
+      en: "Next",
+      ko: "다음 단계",
+    },
+    method1Endpoint: {
+      en: "Method 1 Endpoint",
+      ko: "방법 1 연동 주소",
+    },
+    method1Title: {
+      en: "API URL for Native Popup Card (Method 1)",
+      ko: "단축어 URL 블록용 복사 대상 (네이티브 팝업 API)",
+    },
+    method1Desc: {
+      en: "Paste this address in the 'URL' box of the Shortcuts app, then map the Shortcut Input variable right at the end.",
+      ko: "단축어 앱의 'URL' 상자에 이 주소를 넣고 뒤에 단축어 입력 변수를 대입하세요.",
+    },
+    method2Endpoint: {
+      en: "Method 2 Web URL",
+      ko: "방법 2 연동 주소",
+    },
+    method2Title: {
+      en: "Web Workspace URL (Method 2)",
+      ko: "단축어 URL 블록용 복사 대상 (웹 작업창 주소)",
+    },
+    method2Desc: {
+      en: "Paste this address in the 'URL' box, then append the Shortcut Input variable at the end.",
+      ko: "단축어 앱의 'URL' 상자에 이 주소를 넣고 뒤에 단축어 입력 변수를 대입하세요.",
+    },
+    copyApiBtn: {
+      en: "Copy API URL",
+      ko: "API 주소 복사",
+    },
+    copyWebBtn: {
+      en: "Copy Workspace URL",
+      ko: "웹 앱 주소 복사",
+    },
+    copiedBtn: {
+      en: "Copied!",
+      ko: "복사 완료!",
+    },
+    diagramTitle: {
+      en: "macOS Shortcuts Automation Flow",
+      ko: "macOS 단축어 연동 흐름도 (Shortcuts Action Flow)",
+    },
+    diagramStep1: {
+      en: "Selected Text",
+      ko: "드래그 원문",
+    },
+    diagramStep2: {
+      en: "api/translate-text",
+      ko: "서버 API 호출",
+    },
+    diagramStep3: {
+      en: "Floating Web Page",
+      ko: "훑어보기 팝업",
+    },
+    diagramDesc1: {
+      en: "Trigger",
+      ko: "외부 트리거",
+    },
+    diagramDesc2: {
+      en: "API Request",
+      ko: "API 호출",
+    },
+    diagramDesc3: {
+      en: "Overlay",
+      ko: "결과 화면",
+    }
+  };
+
+  const getLabel = (key: keyof typeof labels) => labels[key][uiLang] || labels[key]["en"];
+
   return (
     <div id="mac-shortcut-guide" className="bg-stone-50 border border-stone-200 rounded-xl p-6 shadow-sm">
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-stone-200 pb-4 mb-6">
         <div>
           <h3 className="font-serif text-xl font-semibold text-stone-800 flex items-center gap-2">
             <span className="inline-flex items-center justify-center bg-stone-800 text-stone-100 text-xs font-sans w-5 h-5 rounded-full"></span>
-            macOS Logos Keyboard Shortcut Integration Guide
+            {getLabel("title")}
           </h3>
           <p className="text-sm text-stone-600 mt-1">
-            Translate any selected English text in your Logos Bible app instantly by mapping a system-wide hotkey: <strong>Cmd + Option + Shift + T</strong>.
+            {getLabel("desc")}
           </p>
         </div>
       </div>
@@ -174,7 +377,7 @@ export default function MacShortcutGuide() {
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-          Method 1: Native Floating Popup (Highly Recommended - No Browser Needed)
+          {getLabel("tabNative")}
         </button>
         <button
           onClick={() => handleTabChange("browser")}
@@ -185,7 +388,7 @@ export default function MacShortcutGuide() {
           }`}
         >
           <Monitor className="w-3.5 h-3.5 text-blue-600" />
-          Method 2: Full Interactive Browser Workspace
+          {getLabel("tabBrowser")}
         </button>
       </div>
 
@@ -209,7 +412,7 @@ export default function MacShortcutGuide() {
                   <Icon className="w-4 h-4" />
                 </span>
                 <div className="overflow-hidden text-ellipsis">
-                  <div className="text-[10px] font-mono uppercase opacity-60">Step 0{idx + 1}</div>
+                  <div className="text-[10px] font-mono uppercase opacity-60">{getLabel("stepLabel")} 0{idx + 1}</div>
                   <div className="text-xs font-medium line-clamp-1">{step.title}</div>
                 </div>
               </button>
@@ -219,15 +422,24 @@ export default function MacShortcutGuide() {
           <div className="mt-4 p-3.5 bg-amber-50/50 rounded-lg border border-amber-100 text-xs text-stone-700 space-y-2">
             <p className="font-semibold text-amber-900 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              {activeTab === "native" ? "Seamless Native Popups!" : "Interactive Web Workspace!"}
+              {activeTab === "native" 
+                ? (uiLang === "ko" ? "네이티브 반투명 팝업 연동" : "Seamless Native Popups!") 
+                : (uiLang === "ko" ? "대조 공부용 브라우저 작업실" : "Interactive Web Workspace!")
+              }
             </p>
             {activeTab === "native" ? (
               <p className="leading-relaxed text-[11px] text-amber-800">
-                Displays a translucent floating card directly above your active Logos window. Ideal for quick translation and parsing without interrupting your study flow.
+                {uiLang === "ko" 
+                  ? "로고스 프로그램 실행 중에 전용 단축키만 치면 성경 본문 위에 둥둥 떠 있는 심플하고 강력한 결과 주석 카드가 생성됩니다."
+                  : "Displays a translucent floating card directly above your active Logos window. Ideal for quick translation and parsing without interrupting your study flow."
+                }
               </p>
             ) : (
               <p className="leading-relaxed text-[11px] text-amber-800">
-                Opens the full web application on a separate tab, providing deep tabbed insights, histories, and dictionary annotations.
+                {uiLang === "ko" 
+                  ? "전체 웹브라우저 창을 실행하여 문장 일대일 대조, 성경 원어 연관 렉시콘 데이터베이스, 히스토리 저장을 이용합니다."
+                  : "Opens the full web application on a separate tab, providing deep tabbed insights, histories, and dictionary annotations."
+                }
               </p>
             )}
           </div>
@@ -268,17 +480,17 @@ export default function MacShortcutGuide() {
               <button
                 disabled={activeStep === 0}
                 onClick={() => setActiveStep(p => p - 1)}
-                className="flex items-center justify-center gap-1 flex-1 sm:flex-initial px-3 py-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 rounded-md disabled:opacity-40 transition-colors"
+                className="flex items-center justify-center gap-1 flex-1 sm:flex-initial px-3 py-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 rounded-md disabled:opacity-40 transition-colors text-xs font-semibold"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                Previous
+                {getLabel("previousBtn")}
               </button>
               <button
                 disabled={activeStep === steps.length - 1}
                 onClick={() => setActiveStep(p => p + 1)}
-                className="flex items-center justify-center gap-1 flex-1 sm:flex-initial px-3 py-1.5 bg-stone-800 text-stone-100 hover:bg-stone-900 rounded-md disabled:opacity-40 transition-colors"
+                className="flex items-center justify-center gap-1 flex-1 sm:flex-initial px-3 py-1.5 bg-stone-800 text-stone-100 hover:bg-stone-900 rounded-md disabled:opacity-40 transition-colors text-xs font-semibold"
               >
-                Next
+                {getLabel("nextBtn")}
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -292,9 +504,9 @@ export default function MacShortcutGuide() {
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex-1">
-                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Method 1 Endpoint</span>
-                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">API URL for Native Popup Card (Method 1)</h5>
-                <p className="text-[11px] text-stone-600 mt-0.5">Paste this address in the 'URL' box of the Shortcuts app, then map the <code className="font-mono text-amber-800 font-bold bg-amber-100/50 px-1 rounded">Shortcut Input</code> variable right at the end.</p>
+                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{getLabel("method1Endpoint")}</span>
+                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">{getLabel("method1Title")}</h5>
+                <p className="text-[11px] text-stone-600 mt-0.5">{getLabel("method1Desc")}</p>
               </div>
               <button
                 onClick={handleCopyTextUrl}
@@ -303,12 +515,12 @@ export default function MacShortcutGuide() {
                 {copiedTextUrl ? (
                   <>
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Copied!</span>
+                    <span>{getLabel("copiedBtn")}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copy API URL</span>
+                    <span>{getLabel("copyApiBtn")}</span>
                   </>
                 )}
               </button>
@@ -321,9 +533,9 @@ export default function MacShortcutGuide() {
           <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex-1">
-                <span className="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Method 2 Web URL</span>
-                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">Web Workspace URL (Method 2)</h5>
-                <p className="text-[11px] text-stone-600 mt-0.5">Paste this address in the 'URL' box, then append the <code className="font-mono text-blue-900 bg-blue-100/50 px-1 rounded">Shortcut Input</code> variable at the end.</p>
+                <span className="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{getLabel("method2Endpoint")}</span>
+                <h5 className="font-serif text-sm font-semibold text-stone-800 mt-1">{getLabel("method2Title")}</h5>
+                <p className="text-[11px] text-stone-600 mt-0.5">{getLabel("method2Desc")}</p>
               </div>
               <button
                 onClick={handleCopyWebUrl}
@@ -332,12 +544,12 @@ export default function MacShortcutGuide() {
                 {copiedWebUrl ? (
                   <>
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Copied!</span>
+                    <span>{getLabel("copiedBtn")}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Workspace URL</span>
+                    <span>{getLabel("copyWebBtn")}</span>
                   </>
                 )}
               </button>
@@ -352,25 +564,25 @@ export default function MacShortcutGuide() {
       {/* Visual Diagram for Shortcuts flow */}
       <div className="mt-6 bg-stone-800 text-stone-100 p-5 rounded-xl">
         <h4 className="text-xs font-mono font-semibold uppercase text-stone-400 tracking-wider mb-3">
-          macOS Shortcuts Automation Flow
+          {getLabel("diagramTitle")}
         </h4>
         <div className="flex flex-col md:flex-row items-center justify-around gap-4 text-xs font-mono pt-2">
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
-            <span className="text-stone-400 text-[10px]">01. Trigger</span>
-            <span className="font-semibold text-stone-200 mt-1">Selected Text</span>
+            <span className="text-stone-400 text-[10px]">01. {getLabel("diagramDesc1")}</span>
+            <span className="font-semibold text-stone-200 mt-1">{getLabel("diagramStep1")}</span>
             <span className="text-[10px] text-amber-400/80 mt-1">Cmd + Opt + Shift + T</span>
           </div>
           <span className="text-stone-500 font-bold hidden md:inline">➔</span>
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
-            <span className="text-stone-400 text-[10px]">02. API Request</span>
-            <span className="font-semibold text-stone-200 mt-1">api/translate-text</span>
+            <span className="text-stone-400 text-[10px]">02. {getLabel("diagramDesc2")}</span>
+            <span className="font-semibold text-stone-200 mt-1">{getLabel("diagramStep2")}</span>
             <span className="text-[10px] text-stone-400 mt-1">Get Contents of URL</span>
           </div>
           <span className="text-stone-500 font-bold hidden md:inline">➔</span>
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
-            <span className="text-stone-400 text-[10px]">03. Overlay</span>
-            <span className="font-semibold text-amber-300 mt-1">Floating Web Page</span>
-            <span className="text-[10px] text-stone-400 mt-1">Show Result Overlay</span>
+            <span className="text-stone-400 text-[10px]">03. {getLabel("diagramDesc3")}</span>
+            <span className="font-semibold text-amber-300 mt-1">{getLabel("diagramStep3")}</span>
+            <span className="text-[10px] text-stone-400 mt-1">Show Result (HTML Overlay)</span>
           </div>
         </div>
       </div>
