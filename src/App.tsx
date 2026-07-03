@@ -427,18 +427,64 @@ export default function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-6 shadow-sm flex items-start gap-3"
+                  className="bg-red-50 border border-red-200 text-red-900 rounded-xl p-6 shadow-sm space-y-4"
                 >
-                  <span className="text-lg">⚠️</span>
-                  <div>
-                    <h4 className="font-bold text-sm">신학 번역 요청 실패</h4>
-                    <p className="text-xs mt-1 text-red-700 leading-relaxed">{error}</p>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg">⚠️</span>
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-sm">신학 번역 요청 실패 (API Error)</h4>
+                      <p className="text-xs text-red-700 leading-relaxed font-mono bg-red-100/50 p-2 rounded border border-red-200">{error}</p>
+                    </div>
+                  </div>
+
+                  {error.includes("GEMINI_API_KEY") && (
+                    <div className="bg-white border border-red-200 rounded-lg p-4 text-xs text-stone-700 space-y-3 shadow-xs">
+                      <p className="font-bold text-stone-900 flex items-center gap-1.5">
+                        💡 GEMINI_API_KEY 설정 방법 가이드
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-stone-600 pl-1">
+                        <li>이 웹브라우저 우측 상단이나 AI Studio의 <strong>Settings</strong> (설정) 메뉴를 클릭합니다.</li>
+                        <li><strong>Secrets</strong> 또는 <strong>Environment Variables</strong> 탭을 찾습니다.</li>
+                        <li>이름을 <code className="bg-stone-100 text-stone-800 px-1 py-0.5 rounded font-mono font-semibold">GEMINI_API_KEY</code>로 설정합니다.</li>
+                        <li>구글 AI 스튜디오나 구글 클라우드에서 발급받은 실제 API 키 값을 입력하고 저장합니다.</li>
+                        <li>단축어 및 웹 앱을 새로고침하여 다시 사용해 주세요!</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  {error.includes("DEEPL") && (
+                    <div className="bg-white border border-red-200 rounded-lg p-4 text-xs text-stone-700 space-y-3 shadow-xs">
+                      <p className="font-bold text-stone-900 flex items-center gap-1.5">
+                        💡 DEEPL_API_KEY 설정 방법 가이드
+                      </p>
+                      <p className="text-stone-600">
+                        DeepL API 연동 중 오류가 생겼거나 키를 등록하고 싶으신가요?
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-stone-600 pl-1">
+                        <li><a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer" className="text-stone-900 underline font-semibold">DeepL API Developer Portal</a>에 로그인하거나 가입합니다.</li>
+                        <li>무료 플랜(DeepL API Free, 월 50만자 무료) 또는 프로 플랜에 가입한 뒤 계정 설정에서 API 키를 복사합니다.</li>
+                        <li>우측 상단 <strong>Settings</strong> 메뉴에서 <code className="bg-stone-100 text-stone-800 px-1 py-0.5 rounded font-mono font-semibold">DEEPL_API_KEY</code> 이름으로 키 값을 등록해 주세요.</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
                     <button
                       onClick={() => handleTranslate()}
-                      className="mt-3 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 font-bold text-xs rounded transition-colors"
+                      className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 font-bold text-xs rounded transition-colors"
                     >
                       다시 시도하기
                     </button>
+                    {error.includes("GEMINI_API_KEY") && (
+                      <a 
+                        href="https://aistudio.google.com/apikey" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 font-bold text-xs rounded transition-colors inline-block"
+                      >
+                        무료 Gemini API Key 발급받기 ↗
+                      </a>
+                    )}
                   </div>
                 </motion.div>
               )}

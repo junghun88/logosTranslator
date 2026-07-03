@@ -14,22 +14,35 @@ async function startServer() {
 
   // Shared helper function to do the translation and analysis
   async function translateAndAnalyzeCore(text: string, mode: string = "balanced") {
+    console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}`);
+    
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error("[Translate API] Error: GEMINI_API_KEY is not configured.");
       throw new Error("GEMINI_API_KEY is not configured. Please add it in the Settings secrets panel.");
     }
 
-    // Check and invoke DeepL if key is configured
+    // Check and invoke DeepL if key is configured (support both DEEPL_API_KEY and DEEP_API_KEY)
     let deeplTranslation: string | null = null;
     let deeplError: string | null = null;
-    const deeplKey = process.env.DEEPL_API_KEY;
+    const deeplKey = process.env.DEEPL_API_KEY || process.env.DEEP_API_KEY;
 
     if (deeplKey) {
+      console.log("[Translate API] Found DeepL API Key. Initializing DeepL request...");
       try {
         const isFree = deeplKey.endsWith(":fx");
         const deeplUrl = isFree 
           ? "https://api-free.deepl.com/v2/translate" 
           : "https://api.deepl.com/v2/translate";
+
+        console.log(`[Translate API] Querying DeepL API via: ${deeplUrl}`);
+        
+        // Add a 5-second timeout to prevent requests from hanging indefinitely
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.warn("[Translate API] DeepL request timed out after 5 seconds. Aborting.");
+          controller.abort();
+        }, 5000);
 
         const deeplRes = await fetch(deeplUrl, {
           method: "POST",
@@ -40,25 +53,34 @@ async function startServer() {
           body: JSON.stringify({
             text: [text],
             target_lang: "KO"
-          })
+          }),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (deeplRes.ok) {
           const deeplData = await deeplRes.json() as { translations: { text: string }[] };
           if (deeplData?.translations?.[0]?.text) {
             deeplTranslation = deeplData.translations[0].text;
+            console.log("[Translate API] DeepL translation completed successfully.");
+          } else {
+            console.warn("[Translate API] DeepL responded successfully but translation field was empty.");
           }
         } else {
           const errText = await deeplRes.text();
-          console.error(`DeepL API responded with status ${deeplRes.status}: ${errText}`);
+          console.error(`[Translate API] DeepL API responded with status ${deeplRes.status}: ${errText}`);
           deeplError = `DeepL API Error (Status ${deeplRes.status})`;
         }
       } catch (err: any) {
-        console.error("Failed to connect to DeepL API:", err);
-        deeplError = err?.message || "DeepL Connection Error";
+        console.error("[Translate API] Failed to connect to DeepL API or request timed out:", err);
+        deeplError = err?.message || "DeepL Connection Error/Timeout";
       }
+    } else {
+      console.log("[Translate API] No DeepL API Key configured. Skipping DeepL translation step.");
     }
 
+    console.log("[Translate API] Initializing GoogleGenAI client...");
     const ai = new GoogleGenAI({
       apiKey,
       httpOptions: {
@@ -91,6 +113,7 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
 "${deeplTranslation}"`;
     }
 
+    console.log("[Translate API] Invoking Gemini API generateContent...");
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: prompt,
@@ -151,10 +174,21 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
 
     const responseText = response.text;
     if (!responseText) {
+      console.error("[Translate API] Error: Gemini API returned an empty response.");
       throw new Error("Empty response from Gemini");
     }
 
-    const parsedResponse = JSON.parse(responseText.trim());
+    console.log("[Translate API] Received response from Gemini. Parsing JSON...");
+    
+    // Defensive Markdown Code Blocks cleanup
+    let cleanedText = responseText.trim();
+    if (cleanedText.startsWith("```")) {
+      console.log("[Translate API] Cleaning markdown wrapper from response text...");
+      cleanedText = cleanedText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+    }
+
+    const parsedResponse = JSON.parse(cleanedText);
+    console.log("[Translate API] JSON parsed successfully.");
     
     // Inject DeepL status and translation into response so client can display it
     parsedResponse.deeplTranslation = deeplTranslation;
