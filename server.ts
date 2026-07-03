@@ -482,71 +482,112 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
         return res.status(200).send(lines.join("\n"));
       }
 
-      const result = await translateAndAnalyzeCore(text, mode);
+      // 1. Try to fetch DeepL translation if configured for lightning fast simple translation
+      let deeplTranslation: string | null = null;
+      let usedDeepL = false;
+      const deeplKey = getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
+
+      if (deeplKey) {
+        console.log("[Fast Route] Found DeepL key. Querying DeepL translation...");
+        try {
+          const isFree = deeplKey.endsWith(":fx");
+          const deeplUrl = isFree 
+            ? "https://api-free.deepl.com/v2/translate" 
+            : "https://api.deepl.com/v2/translate";
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second timeout for speed
+
+          const deeplRes = await fetch(deeplUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `DeepL-Auth-Key ${deeplKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              text: [text],
+              target_lang: "KO"
+            }),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (deeplRes.ok) {
+            const deeplData = await deeplRes.json() as { translations: { text: string }[] };
+            if (deeplData?.translations?.[0]?.text) {
+              deeplTranslation = deeplData.translations[0].text;
+              usedDeepL = true;
+              console.log("[Fast Route] DeepL translation completed successfully.");
+            }
+          }
+        } catch (deeplErr) {
+          console.warn("[Fast Route] DeepL query failed, falling back to simple Gemini...", deeplErr);
+        }
+      }
+
+      let translationResult = "";
+      let engineName = "";
+
+      if (usedDeepL && deeplTranslation) {
+        translationResult = deeplTranslation;
+        engineName = "DeepL 고정밀 초고속 번역";
+      } else {
+        // Fallback to simple Gemini translation if DeepL is not available or failed
+        console.log("[Fast Route] DeepL is not available or failed. Using fast Gemini translation...");
+        const apiKey = getCleanEnv("GEMINI_API_KEY");
+        if (!apiKey) {
+          throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 브라우저 우측 상단 Settings 메뉴의 Secrets 패널에서 GEMINI_API_KEY를 등록해 주세요.");
+        }
+
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build',
+            }
+          }
+        });
+
+        const fastPrompt = `You are an expert biblical translator and Christian literature scholar. 
+Translate the following English theological/commentary/biblical text into highly accurate, natural, and elegant Korean.
+Maintain standard Korean Christian terminology (e.g., '하나님', '예수 그리스도', '은혜' 등).
+Do NOT include any introduction, explanations, metadata, markdown backticks, or notes. Return ONLY the translated Korean text.
+
+Text to translate:
+"${text}"`;
+
+        const response = await generateContentWithRetry(
+          ai,
+          {
+            model: "gemini-3.5-flash",
+            contents: fastPrompt,
+            config: {}
+          },
+          15000,
+          "구글 Gemini API 응답 지연"
+        );
+
+        translationResult = response?.text || "";
+        engineName = "Gemini 초고속 신학 번역";
+      }
 
       // Construct a highly polished, classical text card design using text characters
       let lines: string[] = [];
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      lines.push("📖 LOGOS BIBLE TRANSLATION COMPANION");
+      lines.push("📖 LOGOS TRANSLATION COMPANION (FAST)");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       lines.push("");
       lines.push("[ Logos 영어 원문 ]");
-      lines.push(`"${result.originalText.trim()}"`);
+      lines.push(`"${text.trim()}"`);
       lines.push("");
-
-      if (result.deeplUsed && result.deeplTranslation) {
-        lines.push("[ DeepL 고정밀 직역 ]");
-        lines.push(result.deeplTranslation.trim());
-        lines.push("");
-      }
-
-      lines.push("[ Gemini 고품격 신학 번역 ]");
-      lines.push(result.translation.trim());
+      lines.push(`[ ${engineName} ]`);
+      lines.push(translationResult.trim());
       lines.push("");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      lines.push("💡 신학적 맥락 & 해설 (Theological Insights)");
-      lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      lines.push(result.theologicalInsights.trim());
-      lines.push("");
-
-      if (result.words && result.words.length > 0) {
-        lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        lines.push("🔍 핵심 원어 사전 (Original Languages Study)");
-        lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        result.words.forEach((item: any) => {
-          let wordHeader = `• ${item.word}`;
-          if (item.originalLanguage) {
-            wordHeader += ` [${item.originalLanguage}`;
-            if (item.transliteration) {
-              wordHeader += ` / ${item.transliteration}`;
-            }
-            wordHeader += `]`;
-          }
-          lines.push(wordHeader);
-          lines.push(`  뜻: ${item.koreanMeaning}`);
-          if (item.explanation) {
-            lines.push(`  설명: ${item.explanation}`);
-          }
-          lines.push("");
-        });
-      }
-
-      if (result.crossReferences && result.crossReferences.length > 0) {
-        lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        lines.push("🔗 연관 교차 참조 성경 구절 (Cross-References)");
-        lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        result.crossReferences.forEach((ref: any, idx: number) => {
-          lines.push(`${idx + 1}. ${ref.citation}`);
-          if (ref.englishText) {
-            lines.push(`   ENG: "${ref.englishText.trim()}"`);
-          }
-          lines.push(`   KOR: "${ref.koreanText.trim()}"`);
-          lines.push("");
-        });
-      }
-
-      lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      lines.push(" Logos Translation Assistant | Theology Edition");
+      lines.push("⚡️ 팝업 단축키용 초고속 직역 모드로 실행되었습니다.");
+      lines.push("💡 상세 신학 분석, 원어 연구, 대조 주해 및 교차 구절은");
+      lines.push("   번역 동반자 웹 브라우저 앱에서 실시간으로 확인해 보세요!");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
       // Set content type as plain text with UTF-8 encoding
