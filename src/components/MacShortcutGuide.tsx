@@ -70,15 +70,15 @@ export default function MacShortcutGuide() {
       imageTip: "이제 브라우저를 열지 않고도 macOS 자체 팝업창에서 깔끔한 원어/주해 카드가 노출됩니다!"
     },
     {
-      title: "5. Alt + T (Option + T) 단축키 연결",
+      title: "5. Cmd + Option + Shift + T 단축키 연결",
       description: "Logos 성경을 보던 도중 드래그한 다음 언제든 바로 호출할 수 있도록 단축키를 매핑합니다.",
       icon: Keyboard,
       instructions: [
         "다시 오른쪽의 단축어 세부사항 패널로 이동합니다.",
-        "'키보드 단축키 추가' 버튼을 누르고 키보드에서 Alt + T (Option + T) 키를 눌러 등록합니다.",
+        "'키보드 단축키 추가' 버튼을 누르고 키보드에서 Cmd + Option + Shift + T 키를 눌러 등록합니다.",
         "이제 단축어 편집창을 닫으셔도 완료됩니다!"
       ],
-      imageTip: "로고스 성경 본문을 마우스로 드래그하고 Alt+T만 누르면 1초 만에 팝업창이 떠오릅니다."
+      imageTip: "로고스 성경 본문을 마우스로 드래그하고 Cmd + Option + Shift + T만 누르면 1초 만에 팝업창이 떠오릅니다."
     }
   ];
 
@@ -106,12 +106,12 @@ export default function MacShortcutGuide() {
       imageTip: "완성 주소 형태: " + appUrl + "/?text=[단축어 입력]"
     },
     {
-      title: "3. 단축키 매핑 (Alt + T)",
+      title: "3. 단축키 매핑 (Cmd + Option + Shift + T)",
       description: "성경 연구 도중 마우스 드래그를 마치면 한 번에 웹 번역기를 띄울 수 있도록 최종 단축키를 등록합니다.",
       icon: Keyboard,
       instructions: [
         "우측 단축어 세부사항 설정에서 '키보드 단축키 추가'를 누릅니다.",
-        "키보드에서 Option + T (또는 원하는 조합)를 누릅니다.",
+        "키보드에서 Cmd + Option + Shift + T 조합을 누릅니다.",
         "이제 로고스 성경에서 드래그 후 지정 단축키를 누르면 아름다운 웹 분석기가 즉시 열립니다!"
       ],
       imageTip: "웹 번역기는 더 풍성한 카드 UI와 복사, 저장 등 세분화된 대화형 컨트롤을 제공합니다."
@@ -151,7 +151,7 @@ export default function MacShortcutGuide() {
             macOS Logos 마우스 블록 단축키 연동 가이드
           </h3>
           <p className="text-sm text-stone-600 mt-1">
-            Logos 성경 앱에서 마우스로 드래그한 영문 본문을 <strong>Alt + T (Option + T)</strong> 키로 즉시 번역하는 연동 가이드입니다.
+            Logos 성경 앱에서 마우스로 드래그한 영문 본문을 <strong>Cmd + Option + Shift + T</strong> 키로 즉시 번역하는 연동 가이드입니다.
           </p>
         </div>
       </div>
@@ -351,7 +351,7 @@ export default function MacShortcutGuide() {
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
             <span className="text-stone-400 text-[10px]">01. 외부 트리거</span>
             <span className="font-semibold text-stone-200 mt-1">드래그한 텍스트</span>
-            <span className="text-[10px] text-amber-400/80 mt-1">Alt + T</span>
+            <span className="text-[10px] text-amber-400/80 mt-1">Cmd + Opt + Shift + T</span>
           </div>
           <span className="text-stone-500 font-bold hidden md:inline">➔</span>
           <div className="flex flex-col items-center p-3 bg-stone-700/50 border border-stone-600 rounded-lg w-full md:w-1/4 text-center">
