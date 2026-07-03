@@ -55,6 +55,32 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
   ]);
 }
 
+// Robust, case-insensitive, and cleaned environment variable fetcher to prevent user configuration errors
+function getCleanEnv(keyName: string): string | undefined {
+  const upperKey = keyName.toUpperCase();
+  const lowerKey = keyName.toLowerCase();
+  
+  let val = process.env[keyName] || process.env[upperKey] || process.env[lowerKey];
+  
+  if (!val) {
+    const foundKey = Object.keys(process.env).find(k => k.toUpperCase() === upperKey);
+    if (foundKey) {
+      val = process.env[foundKey];
+    }
+  }
+  
+  if (typeof val === "string") {
+    val = val.trim();
+    // Strip enclosing quotes if present (e.g. "key" or 'key')
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.substring(1, val.length - 1).trim();
+    }
+    return val;
+  }
+  
+  return undefined;
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -65,16 +91,16 @@ async function startServer() {
   async function translateAndAnalyzeCore(text: string, mode: string = "balanced") {
     console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}`);
     
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getCleanEnv("GEMINI_API_KEY");
     if (!apiKey) {
       console.error("[Translate API] Error: GEMINI_API_KEY is not configured.");
-      throw new Error("GEMINI_API_KEY is not configured. Please add it in the Settings secrets panel.");
+      throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 브라우저 우측 상단 Settings 메뉴의 Secrets 패널에서 GEMINI_API_KEY를 등록해 주세요.");
     }
 
     // Check and invoke DeepL if key is configured (support both DEEPL_API_KEY and DEEP_API_KEY)
     let deeplTranslation: string | null = null;
     let deeplError: string | null = null;
-    const deeplKey = process.env.DEEPL_API_KEY || process.env.DEEP_API_KEY;
+    const deeplKey = getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
 
     if (deeplKey) {
       console.log("[Translate API] Found DeepL API Key. Initializing DeepL request...");
@@ -326,20 +352,47 @@ Provide deep, high-fidelity theological analysis and explain key terms, includin
     } catch (error: any) {
       console.error("Translation API Error:", error);
       
-      // Attempt to extract clean message from stringified API errors
-      let errMsg = error?.message || "Failed to translate text";
-      if (typeof errMsg === "string" && errMsg.trim().startsWith("{")) {
-        try {
-          const parsed = JSON.parse(errMsg);
-          if (parsed?.error?.message) {
-            errMsg = parsed.error.message;
-          } else if (parsed?.message) {
-            errMsg = parsed.message;
+      let errMsg = "번역에 실패하였습니다.";
+      if (error) {
+        if (typeof error === "string") {
+          errMsg = error;
+        } else if (error.message) {
+          errMsg = error.message;
+        }
+        
+        // Handle Google GenAI SDK nested error details if present
+        if (error.error && typeof error.error === "object") {
+          if (error.error.message) {
+            errMsg = error.error.message;
           }
-        } catch (e) {
-          // Ignore
+        }
+        
+        // Handle potential stringified JSON errors
+        if (typeof errMsg === "string" && errMsg.trim().startsWith("{")) {
+          try {
+            const parsed = JSON.parse(errMsg);
+            if (parsed?.error?.message) {
+              errMsg = parsed.error.message;
+            } else if (parsed?.message) {
+              errMsg = parsed.message;
+            }
+          } catch (e) {
+            // Ignore
+          }
         }
       }
+      
+      // Let's translate some common API error terms to clean Korean for the user
+      if (errMsg.includes("API key not valid") || errMsg.includes("API_KEY_INVALID")) {
+        errMsg = "등록된 GEMINI_API_KEY가 올바르지 않습니다. 정확한 구글 API 키 값을 다시 한 번 입력해 주세요.";
+      } else if (errMsg.includes("quota exceeded") || errMsg.includes("Quota exceeded") || errMsg.includes("429")) {
+        errMsg = "구글 Gemini API 할당량(Quota)을 초과하였습니다. 잠시만 대기 후 다시 시도해 주세요.";
+      } else if (errMsg.includes("503") || errMsg.includes("Service Unavailable")) {
+        errMsg = "구글 Gemini 서버가 일시적으로 중단되었거나 응답하지 않습니다. 잠시 후 다시 시도해 주세요.";
+      } else if (errMsg.includes("timeout") || errMsg.includes("time out")) {
+        errMsg = "요청 시간 초과(Timeout): 서버 응답 지연으로 취소되었습니다. 잠시 후 '다시 시도하기'를 눌러주세요.";
+      }
+      
       res.status(500).json({ error: errMsg });
     }
   });
