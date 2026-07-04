@@ -877,12 +877,12 @@ Text to translate:
     <div class="button-group">
       <button class="btn btn-primary" onclick="copyTranslation()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-        Copy Translation
+        번역 텍스트 복사 (Copy)
       </button>
       <button class="btn btn-secondary" onclick="copyAll()">
-        Copy Full Card
+        원문+번역 복사
       </button>
-      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">Close</button>
+      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">닫기 (Close)</button>
     </div>
 
     <div class="footer">
@@ -891,7 +891,7 @@ Text to translate:
     </div>
   </div>
 
-  <div id="toast" class="toast">Copied to clipboard!</div>
+  <div id="toast" class="toast">복사 완료!</div>
 
   <script>
     function showToast(msg) {
@@ -906,9 +906,9 @@ Text to translate:
     function copyTranslation() {
       const text = document.getElementById('translationText').innerText;
       navigator.clipboard.writeText(text).then(() => {
-        showToast('Translation copied to clipboard!');
+        showToast('번역 텍스트가 클립보드에 복사되었습니다!');
       }).catch(err => {
-        alert('Copy failed: ' + err);
+        alert('복사 실패: ' + err);
       });
     }
 
@@ -917,9 +917,9 @@ Text to translate:
       const trans = document.getElementById('translationText').innerText;
       const fullText = "[ Logos English Original ]\\n" + orig + "\\n\\n[ ${engineName} ]\\n" + trans;
       navigator.clipboard.writeText(fullText).then(() => {
-        showToast('Full card copied to clipboard!');
+        showToast('전체 카드가 클립보드에 복사되었습니다!');
       }).catch(err => {
-        alert('Copy failed: ' + err);
+        alert('복사 실패: ' + err);
       });
     }
   </script>
