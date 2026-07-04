@@ -38,12 +38,20 @@ export default function MacShortcutGuide() {
       return "";
     }
   });
+  const [clientId, setClientId] = useState(() => {
+    try {
+      return localStorage.getItem("logos_client_id") || "";
+    } catch {
+      return "";
+    }
+  });
 
   React.useEffect(() => {
     const handleStorageChange = () => {
       try {
         setCustomGeminiKey(localStorage.getItem("logos_custom_gemini_key") || "");
         setCustomDeeplKey(localStorage.getItem("logos_custom_deepl_key") || "");
+        setClientId(localStorage.getItem("logos_client_id") || "");
       } catch (e) {
         console.error(e);
       }
@@ -64,6 +72,9 @@ export default function MacShortcutGuide() {
     if (customDeeplKey) {
       url += `&deepl_key=${encodeURIComponent(customDeeplKey)}`;
     }
+    if (clientId) {
+      url += `&client_id=${encodeURIComponent(clientId)}`;
+    }
     url += `&text=`;
     return url;
   };
@@ -75,6 +86,9 @@ export default function MacShortcutGuide() {
     }
     if (customDeeplKey) {
       url += `deepl_key=${encodeURIComponent(customDeeplKey)}&`;
+    }
+    if (clientId) {
+      url += `client_id=${encodeURIComponent(clientId)}&`;
     }
     url += `text=`;
     return url;

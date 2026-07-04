@@ -53,7 +53,7 @@ export default function App() {
 
   // Client ID and Token Usage States
   const [clientId, setClientId] = useState("");
-  const [dailyTokenUsage, setDailyTokenUsage] = useState({ used: 0, limit: 5000 });
+  const [dailyTokenUsage, setDailyTokenUsage] = useState({ used: 0, limit: 50 });
 
   // Load saved keys, client ID and token usage on mount
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function App() {
         localStorage.setItem("logos_token_usage_date", today);
         localStorage.setItem("logos_token_usage_count", "0");
       }
-      setDailyTokenUsage({ used: storedUsageCount, limit: 5000 });
+      setDailyTokenUsage({ used: storedUsageCount, limit: 50 });
     } catch (e) {
       console.error("Failed to load saved API keys, clientId or token usage:", e);
     }
@@ -499,7 +499,7 @@ export default function App() {
                       ></div>
                     </div>
                     <span className="text-xs font-mono font-bold text-stone-750">
-                      {dailyTokenUsage.used.toLocaleString()} / {dailyTokenUsage.limit.toLocaleString()}
+                      {dailyTokenUsage.used.toLocaleString()} / {dailyTokenUsage.limit.toLocaleString()}회
                     </span>
                   </div>
                 ) : (
@@ -604,7 +604,7 @@ export default function App() {
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold text-stone-600">
-                        {t("tokenMeterLabel")} {dailyTokenUsage.used.toLocaleString()} / {dailyTokenUsage.limit.toLocaleString()} ({Math.round((dailyTokenUsage.used / dailyTokenUsage.limit) * 100)}%)
+                        {t("tokenMeterLabel")} {dailyTokenUsage.used.toLocaleString()} / {dailyTokenUsage.limit.toLocaleString()}회 ({Math.round((dailyTokenUsage.used / dailyTokenUsage.limit) * 100)}%)
                       </span>
                     )}
                   </div>

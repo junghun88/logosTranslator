@@ -136,13 +136,13 @@ function getCleanEnv(keyName: string): string | undefined {
   return undefined;
 }
 
-// Token Limit Store (In-Memory)
-// Tracks token usage per client-id or IP per day (YYYY-MM-DD)
-interface TokenUsage {
+// Request Limit Store (In-Memory)
+// Tracks translation count per client-id or IP per day (YYYY-MM-DD)
+interface RequestUsage {
   date: string;
-  tokens: number;
+  count: number;
 }
-const tokenStore: Record<string, TokenUsage> = {};
+const requestStore: Record<string, RequestUsage> = {};
 
 function getTodayString(): string {
   const d = new Date();
@@ -158,26 +158,25 @@ function getTodayString(): string {
 }
 
 // Check if usage limit is reached (returns true if allowed, false if blocked)
-function checkTokenLimit(
+function checkRequestLimit(
   clientId: string | undefined,
   ip: string,
-  estimatedTokens: number,
   hasCustomKey: boolean
 ): { allowed: boolean; currentUsage: number; limit: number; error?: string } {
-  const LIMIT = 5000;
+  const LIMIT = 50;
   if (hasCustomKey) {
     return { allowed: true, currentUsage: 0, limit: LIMIT };
   }
 
   const key = (clientId && clientId.trim()) || ip || "unknown";
   const today = getTodayString();
-  const record = tokenStore[key];
+  const record = requestStore[key];
 
   let currentUsage = 0;
   if (record && record.date === today) {
-    currentUsage = record.tokens;
+    currentUsage = record.count;
   } else {
-    tokenStore[key] = { date: today, tokens: 0 };
+    requestStore[key] = { date: today, count: 0 };
   }
 
   if (currentUsage >= LIMIT) {
@@ -185,23 +184,23 @@ function checkTokenLimit(
       allowed: false,
       currentUsage,
       limit: LIMIT,
-      error: `오늘 무료 제공량(5,000 토큰)을 모두 소진하셨습니다. (현재 사용량: ${currentUsage.toLocaleString()} / 5,000 토큰). 계속 사용하시려면 우측 상단의 '⚙️ 개인 API 키 설정' 창에서 본인의 Gemini API 키를 등록하여 무료 과금 한도를 해제해 주세요.`
+      error: `오늘 무료 번역 제공량(하루 50회)을 모두 소진하셨습니다. (현재 사용량: ${currentUsage} / 50 회). 계속 사용하시려면 우측 상단의 '⚙️ 개인 API 키 설정' 창에서 본인의 Gemini API 키를 등록하여 무료 제한을 해제해 주세요.`
     };
   }
 
   return { allowed: true, currentUsage, limit: LIMIT };
 }
 
-// Commits the tokens used by a request
-function commitTokens(clientId: string | undefined, ip: string, actualTokens: number) {
+// Commits the request count used by a request
+function commitRequest(clientId: string | undefined, ip: string) {
   const key = (clientId && clientId.trim()) || ip || "unknown";
   const today = getTodayString();
-  const record = tokenStore[key];
+  const record = requestStore[key];
 
   if (record && record.date === today) {
-    record.tokens += actualTokens;
+    record.count += 1;
   } else {
-    tokenStore[key] = { date: today, tokens: actualTokens };
+    requestStore[key] = { date: today, count: 1 };
   }
 }
 
@@ -508,23 +507,22 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
       const estimatedTokens = Math.ceil(text.length * 1.5 + 1500);
 
-      const limitCheck = checkTokenLimit(clientId, req.ip || "", estimatedTokens, hasCustomKey);
+      const limitCheck = checkRequestLimit(clientId, req.ip || "", hasCustomKey);
       if (!limitCheck.allowed) {
         return res.status(403).json({ error: limitCheck.error, limitExceeded: true });
       }
 
       const result = await translateAndAnalyzeCore(text, mode, targetLang || "Korean", customGeminiKey, customDeeplKey);
       
-      const actualTokens = result.tokenCount || estimatedTokens;
-      commitTokens(clientId, req.ip || "", actualTokens);
+      commitRequest(clientId, req.ip || "");
 
       const finalKey = clientId || req.ip || "unknown";
-      const finalDailyTotal = tokenStore[finalKey]?.tokens || 0;
+      const finalDailyTotal = requestStore[finalKey]?.count || 0;
 
       result.tokenUsage = {
-        used: actualTokens,
+        used: 1,
         dailyTotal: finalDailyTotal,
-        limit: 5000,
+        limit: 50,
         hasCustomKey
       };
 
@@ -594,7 +592,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
 
       if (text && text.trim()) {
-        const limitCheck = checkTokenLimit(clientId, req.ip || "", estimatedTokens, hasCustomKey);
+        const limitCheck = checkRequestLimit(clientId, req.ip || "", hasCustomKey);
         if (!limitCheck.allowed) {
           if (isHtml) {
             res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -668,7 +666,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
   <div class="card">
     <div class="title">⚠️ [이용 한도 초과] 하루 무료 한도에 도달했습니다</div>
     <div class="desc">
-      오늘 하루 무료 제공량(5,000 토큰)을 모두 소진하셨습니다.<br><br>
+      오늘 하루 무료 제공량(50회 번역)을 모두 소진하셨습니다.<br><br>
       계속해서 단축어와 신학 번역 서비스를 중단 없이 사용하시려면, 웹 브라우저에서 서비스에 접속한 후 <strong>오른쪽 상단 '⚙️ 개인 API 키 설정'</strong>에서 본인의 Google Gemini API 키를 등록해 주세요. 등록 시 무료 과금 제한이 완전히 해제됩니다.
     </div>
     <button class="btn" onclick="window.close()">닫기</button>
@@ -683,7 +681,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
             lines.push("⚠️ [이용 한도 초과] 하루 무료 한도 도달");
             lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             lines.push("");
-            lines.push("오늘 제공되는 무료 사용량(5,000 토큰)을 초과했습니다.");
+            lines.push("오늘 제공되는 무료 사용량(하루 50회 번역)을 초과했습니다.");
             lines.push("");
             lines.push("계속 사용하시려면 본인의 Gemini API 키를 등록해야 합니다.");
             lines.push("");
@@ -916,10 +914,11 @@ Text to translate:
         translationResult = response?.text || "";
         engineName = `Gemini 초고속 신학 번역 (${targetLang})`;
 
-        // Capture and commit actual token usage
-        const actualTokens = response?.usageMetadata?.totalTokenCount || response?.usageMetadata?.total_token_count || estimatedTokens;
-        commitTokens(clientId, req.ip || "", actualTokens);
+        commitRequest(clientId, req.ip || "");
       }
+
+      const finalKey = (clientId && clientId.trim()) || req.ip || "unknown";
+      const finalDailyTotal = requestStore[finalKey]?.count || 0;
 
       if (isHtml) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -1095,9 +1094,11 @@ Text to translate:
       <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">닫기 (Close)</button>
     </div>
 
-    <div class="footer">
-      ⚡️ Running in high-speed popup mode via system shortcut.<br>
-      For deep tabbed analysis and lexicon entries, use the full Companion browser app.
+    <div class="footer" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center;">
+      <div>⚡️ Running in high-speed popup mode via system shortcut.</div>
+      <div style="font-size: 10px; color: #78716c; font-weight: 500; background-color: #f5f5f4; padding: 2px 8px; border-radius: 12px; border: 1px solid #e7e5e4; margin-top: 4px; display: inline-block;">
+        ${hasCustomKey ? "✨ 한도 없음 (개인 API 키 적용 중)" : `📊 오늘 무료 번역: ${finalDailyTotal} / 50 회`}
+      </div>
     </div>
   </div>
 
@@ -1152,6 +1153,11 @@ Text to translate:
       lines.push("");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       lines.push("⚡️ Running in high-speed popup mode via system shortcut.");
+      if (hasCustomKey) {
+        lines.push("✨ 한도 없음 (개인 API 키 적용 중)");
+      } else {
+        lines.push(`📊 오늘 무료 번역: ${finalDailyTotal} / 50 회`);
+      }
       lines.push("💡 For deep theological commentary, lexicons, and cross-references,");
       lines.push("   visit the interactive Companion browser workspace!");
       lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
