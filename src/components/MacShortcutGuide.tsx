@@ -554,20 +554,21 @@ export default function MacShortcutGuide() {
               <div className="p-3 bg-white rounded-lg border border-stone-200 space-y-2 shadow-inner">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
                   <Terminal className="w-4 h-4 text-stone-600" />
-                  <span>{uiLang === "ko" ? "방법 1: 터미널로 즉시 추가하기 (강력 추천 ⭐️)" : "Fix 1: Fast Terminal Import (Recommended ⭐️)"}</span>
+                  <span>{uiLang === "ko" ? "방법 1: 터미널로 본인 서명 후 설치 (가장 확실함 ⭐️)" : "Fix 1: Sign Locally via Terminal & Open (Most Reliable ⭐️)"}</span>
                 </div>
                 <p className="text-[11px] text-stone-500 leading-normal">
                   {uiLang === "ko" 
-                    ? "터미널 앱을 실행하고 아래의 가져오기 명령어를 입력하면 보안 서명 검사를 생략하고 단축어 앱에 다이렉트로 추가됩니다!"
-                    : "Open your Terminal app and paste this command to bypass GUI signatures and install directly:"}
+                    ? "macOS 단축어 명령어 도구로 다운로드된 파일에 로컬 서명을 수동으로 각인한 후 실행하여 안전하게 단축어 앱에 등록합니다:"
+                    : "Use the macOS built-in shortcuts utility to apply a local signature to the file and open it for a secure installation:"}
                 </p>
                 <div className="flex items-center gap-1.5 bg-stone-50 p-1.5 rounded border border-stone-200">
                   <span className="font-mono text-[10px] text-stone-700 select-all truncate flex-1">
-                    shortcuts import ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut"}
+                    shortcuts sign -i ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut"} -o ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup_Signed.shortcut" : "Logos_Tahoe_Translator_Browser_Signed.shortcut"} && open ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup_Signed.shortcut" : "Logos_Tahoe_Translator_Browser_Signed.shortcut"}
                   </span>
                   <button
                     onClick={() => {
-                      const cmd = `shortcuts import ~/Downloads/${activeTab === "native" ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut"}`;
+                      const file = activeTab === "native" ? "Logos_Tahoe_Translator_Popup" : "Logos_Tahoe_Translator_Browser";
+                      const cmd = `shortcuts sign -i ~/Downloads/${file}.shortcut -o ~/Downloads/${file}_Signed.shortcut && open ~/Downloads/${file}_Signed.shortcut`;
                       navigator.clipboard.writeText(cmd);
                       setCopiedTerminal(true);
                       setTimeout(() => setCopiedTerminal(false), 2000);
