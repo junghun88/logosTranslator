@@ -51,7 +51,11 @@ export default function App() {
   const [showDeeplPwd, setShowDeeplPwd] = useState(false);
   const [keysSavedStatus, setKeysSavedStatus] = useState<"idle" | "saved" | "cleared">("idle");
 
-  // Load saved keys on mount
+  // Client ID and Token Usage States
+  const [clientId, setClientId] = useState("");
+  const [dailyTokenUsage, setDailyTokenUsage] = useState({ used: 0, limit: 5000 });
+
+  // Load saved keys, client ID and token usage on mount
   useEffect(() => {
     try {
       const gemini = localStorage.getItem("logos_custom_gemini_key") || "";
@@ -60,8 +64,28 @@ export default function App() {
       setCustomGeminiKey(gemini);
       setSavedDeeplKey(deepl);
       setCustomDeeplKey(deepl);
+
+      // Client ID loading/generating
+      let cid = localStorage.getItem("logos_client_id") || "";
+      if (!cid) {
+        cid = "cid_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("logos_client_id", cid);
+      }
+      setClientId(cid);
+
+      // Daily Token Usage loading
+      const storedUsageDate = localStorage.getItem("logos_token_usage_date") || "";
+      const today = new Date().toISOString().split("T")[0];
+      let storedUsageCount = 0;
+      if (storedUsageDate === today) {
+        storedUsageCount = parseInt(localStorage.getItem("logos_token_usage_count") || "0", 10);
+      } else {
+        localStorage.setItem("logos_token_usage_date", today);
+        localStorage.setItem("logos_token_usage_count", "0");
+      }
+      setDailyTokenUsage({ used: storedUsageCount, limit: 5000 });
     } catch (e) {
-      console.error("Failed to load saved API keys:", e);
+      console.error("Failed to load saved API keys, clientId or token usage:", e);
     }
   }, []);
 
@@ -232,7 +256,8 @@ export default function App() {
           mode: modeToUse,
           targetLang: langToUse,
           geminiApiKey: geminiKeyOverride !== undefined ? geminiKeyOverride : savedGeminiKey,
-          deeplApiKey: deeplKeyOverride !== undefined ? deeplKeyOverride : savedDeeplKey
+          deeplApiKey: deeplKeyOverride !== undefined ? deeplKeyOverride : savedDeeplKey,
+          clientId: clientId
         })
       });
 
@@ -280,6 +305,15 @@ export default function App() {
       }
 
       setResult(parsedData as TranslationResult);
+
+      if (parsedData?.tokenUsage) {
+        setDailyTokenUsage({
+          used: parsedData.tokenUsage.dailyTotal,
+          limit: parsedData.tokenUsage.limit
+        });
+        localStorage.setItem("logos_token_usage_count", String(parsedData.tokenUsage.dailyTotal));
+        localStorage.setItem("logos_token_usage_date", new Date().toISOString().split("T")[0]);
+      }
     } catch (err: any) {
       console.error("Translation request failed:", err);
       setError(err?.message || "An error occurred during the translation and analysis request.");
@@ -443,14 +477,38 @@ export default function App() {
               {showGuide ? t("collapseGuide") : t("shortcutsGuide")}
             </button>
 
-            <span className="h-6 w-px bg-stone-200 hidden xl:block"></span>
+            <span className="h-6 w-px bg-stone-200 hidden md:block"></span>
             
-            <div className="hidden xl:flex flex-col items-end shrink-0">
-              <span className="text-[10px] font-mono text-stone-400 font-semibold uppercase tracking-wider">{t("engineStatus")}</span>
-              <span className="text-xs text-stone-700 font-medium flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                {t("geminiOnline")}
+            <div className="hidden md:flex flex-col items-start md:items-end shrink-0">
+              <span className="text-[10px] font-mono text-stone-400 font-semibold uppercase tracking-wider">
+                {savedGeminiKey ? t("customKeyBypassActive") : t("dailyTokenUsageTitle")}
               </span>
+              <div className="flex items-center gap-2 mt-0.5">
+                {!savedGeminiKey ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 bg-stone-100 h-2 rounded-full overflow-hidden border border-stone-200 relative">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          dailyTokenUsage.used >= dailyTokenUsage.limit 
+                            ? "bg-rose-500" 
+                            : dailyTokenUsage.used > dailyTokenUsage.limit * 0.8 
+                              ? "bg-amber-500" 
+                              : "bg-amber-600"
+                        }`}
+                        style={{ width: `${Math.min(100, (dailyTokenUsage.used / dailyTokenUsage.limit) * 100)}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-stone-750">
+                      {dailyTokenUsage.used.toLocaleString()} / {dailyTokenUsage.limit.toLocaleString()}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-amber-700 font-bold bg-amber-50/50 px-2 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-600 animate-pulse" />
+                    {t("customKeyBypassActive")}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -531,6 +589,43 @@ export default function App() {
                       </button>
                     </div>
                   </div>
+                </div>
+
+                {/* Daily Token Usage Meter inside Settings */}
+                <div className="bg-stone-50 border border-stone-200/60 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-serif font-bold text-stone-800 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      {t("dailyTokenUsageTitle")}
+                    </span>
+                    {savedGeminiKey ? (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        {t("customKeyBypassActive")}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-stone-600">
+                        {t("tokenMeterLabel")} {dailyTokenUsage.used.toLocaleString()} / {dailyTokenUsage.limit.toLocaleString()} ({Math.round((dailyTokenUsage.used / dailyTokenUsage.limit) * 100)}%)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-stone-500 leading-relaxed">
+                    {t("dailyTokenUsageDesc")}
+                  </p>
+                  
+                  {!savedGeminiKey && (
+                    <div className="w-full bg-stone-250/70 h-2 rounded-full overflow-hidden relative">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          dailyTokenUsage.used >= dailyTokenUsage.limit 
+                            ? "bg-rose-500" 
+                            : dailyTokenUsage.used > dailyTokenUsage.limit * 0.8 
+                              ? "bg-amber-500" 
+                              : "bg-amber-600"
+                        }`}
+                        style={{ width: `${Math.min(100, (dailyTokenUsage.used / dailyTokenUsage.limit) * 100)}%` }}
+                      ></div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">

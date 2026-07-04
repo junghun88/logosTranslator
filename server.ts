@@ -136,6 +136,75 @@ function getCleanEnv(keyName: string): string | undefined {
   return undefined;
 }
 
+// Token Limit Store (In-Memory)
+// Tracks token usage per client-id or IP per day (YYYY-MM-DD)
+interface TokenUsage {
+  date: string;
+  tokens: number;
+}
+const tokenStore: Record<string, TokenUsage> = {};
+
+function getTodayString(): string {
+  const d = new Date();
+  // Adjust to KST (UTC+9) for South Korean users
+  const kstOffset = 9 * 60; // KST is UTC+9
+  const localTime = d.getTime();
+  const kstTime = localTime + (kstOffset + d.getTimezoneOffset()) * 60 * 1000;
+  const kstDate = new Date(kstTime);
+  const year = kstDate.getFullYear();
+  const month = String(kstDate.getMonth() + 1).padStart(2, '0');
+  const date = String(kstDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+}
+
+// Check if usage limit is reached (returns true if allowed, false if blocked)
+function checkTokenLimit(
+  clientId: string | undefined,
+  ip: string,
+  estimatedTokens: number,
+  hasCustomKey: boolean
+): { allowed: boolean; currentUsage: number; limit: number; error?: string } {
+  const LIMIT = 5000;
+  if (hasCustomKey) {
+    return { allowed: true, currentUsage: 0, limit: LIMIT };
+  }
+
+  const key = (clientId && clientId.trim()) || ip || "unknown";
+  const today = getTodayString();
+  const record = tokenStore[key];
+
+  let currentUsage = 0;
+  if (record && record.date === today) {
+    currentUsage = record.tokens;
+  } else {
+    tokenStore[key] = { date: today, tokens: 0 };
+  }
+
+  if (currentUsage >= LIMIT) {
+    return {
+      allowed: false,
+      currentUsage,
+      limit: LIMIT,
+      error: `오늘 무료 제공량(5,000 토큰)을 모두 소진하셨습니다. (현재 사용량: ${currentUsage.toLocaleString()} / 5,000 토큰). 계속 사용하시려면 우측 상단의 '⚙️ 개인 API 키 설정' 창에서 본인의 Gemini API 키를 등록하여 무료 과금 한도를 해제해 주세요.`
+    };
+  }
+
+  return { allowed: true, currentUsage, limit: LIMIT };
+}
+
+// Commits the tokens used by a request
+function commitTokens(clientId: string | undefined, ip: string, actualTokens: number) {
+  const key = (clientId && clientId.trim()) || ip || "unknown";
+  const today = getTodayString();
+  const record = tokenStore[key];
+
+  if (record && record.date === today) {
+    record.tokens += actualTokens;
+  } else {
+    tokenStore[key] = { date: today, tokens: actualTokens };
+  }
+}
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -418,13 +487,17 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
     parsedResponse.deeplUsed = !!deeplTranslation;
     parsedResponse.deeplError = deeplError;
 
+    // Inject token usage metadata
+    const actualTokens = response?.usageMetadata?.totalTokenCount || response?.usageMetadata?.total_token_count || Math.ceil(text.length * 1.5 + 1500);
+    parsedResponse.tokenCount = actualTokens;
+
     return parsedResponse;
   }
 
   // API route for translation and theological analysis (JSON Response)
   app.post("/api/translate", async (req, res) => {
     try {
-      const { text, mode, targetLang, geminiApiKey, deeplApiKey } = req.body;
+      const { text, mode, targetLang, geminiApiKey, deeplApiKey, clientId } = req.body;
       if (!text || typeof text !== "string") {
         return res.status(400).json({ error: "Text is required" });
       }
@@ -432,7 +505,29 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       const customGeminiKey = geminiApiKey || (req.headers["x-gemini-api-key"] as string);
       const customDeeplKey = deeplApiKey || (req.headers["x-deepl-api-key"] as string);
 
+      const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
+      const estimatedTokens = Math.ceil(text.length * 1.5 + 1500);
+
+      const limitCheck = checkTokenLimit(clientId, req.ip || "", estimatedTokens, hasCustomKey);
+      if (!limitCheck.allowed) {
+        return res.status(403).json({ error: limitCheck.error, limitExceeded: true });
+      }
+
       const result = await translateAndAnalyzeCore(text, mode, targetLang || "Korean", customGeminiKey, customDeeplKey);
+      
+      const actualTokens = result.tokenCount || estimatedTokens;
+      commitTokens(clientId, req.ip || "", actualTokens);
+
+      const finalKey = clientId || req.ip || "unknown";
+      const finalDailyTotal = tokenStore[finalKey]?.tokens || 0;
+
+      result.tokenUsage = {
+        used: actualTokens,
+        dailyTotal: finalDailyTotal,
+        limit: 5000,
+        hasCustomKey
+      };
+
       res.json(result);
     } catch (error: any) {
       console.error("Translation API Error:", error);
@@ -493,6 +588,117 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
 
       const customGeminiKey = (req.body.geminiApiKey || req.query.geminiApiKey || req.body.gemini_key || req.query.gemini_key || req.headers["x-gemini-api-key"]) as string | undefined;
       const customDeeplKey = (req.body.deeplApiKey || req.query.deeplApiKey || req.body.deepl_key || req.query.deepl_key || req.headers["x-deepl-api-key"]) as string | undefined;
+      const clientId = (req.body.clientId || req.query.clientId || req.body.client_id || req.query.client_id) as string | undefined;
+
+      const estimatedTokens = Math.ceil(text ? text.length * 1.5 + 300 : 0);
+      const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
+
+      if (text && text.trim()) {
+        const limitCheck = checkTokenLimit(clientId, req.ip || "", estimatedTokens, hasCustomKey);
+        if (!limitCheck.allowed) {
+          if (isHtml) {
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            const limitExceededHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>무료 이용 한도 초과 - Logos 번역 동반자</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f5f5f4;
+      color: #1c1917;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #fca5a5;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      width: 100%;
+      max-width: 520px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #dc2626;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #fca5a5;
+      padding-bottom: 12px;
+    }
+    .desc {
+      font-size: 13px;
+      color: #44403c;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .btn {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background-color: #1c1917;
+      color: #ffffff;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background-color: #44403c;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">⚠️ [이용 한도 초과] 하루 무료 한도에 도달했습니다</div>
+    <div class="desc">
+      오늘 하루 무료 제공량(5,000 토큰)을 모두 소진하셨습니다.<br><br>
+      계속해서 단축어와 신학 번역 서비스를 중단 없이 사용하시려면, 웹 브라우저에서 서비스에 접속한 후 <strong>오른쪽 상단 '⚙️ 개인 API 키 설정'</strong>에서 본인의 Google Gemini API 키를 등록해 주세요. 등록 시 무료 과금 제한이 완전히 해제됩니다.
+    </div>
+    <button class="btn" onclick="window.close()">닫기</button>
+  </div>
+</body>
+</html>`;
+            return res.status(403).send(limitExceededHtml);
+          } else {
+            res.setHeader("Content-Type", "text/plain; charset=utf-8");
+            let lines: string[] = [];
+            lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            lines.push("⚠️ [이용 한도 초과] 하루 무료 한도 도달");
+            lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            lines.push("");
+            lines.push("오늘 제공되는 무료 사용량(5,000 토큰)을 초과했습니다.");
+            lines.push("");
+            lines.push("계속 사용하시려면 본인의 Gemini API 키를 등록해야 합니다.");
+            lines.push("");
+            lines.push("💡 조치 방법:");
+            lines.push("1. 브라우저로 Logos 번역 동반자에 접속합니다.");
+            lines.push("2. 우측 상단 '개인 API 키 설정' 버튼을 누릅니다.");
+            lines.push("3. 본인의 Google Gemini API 키를 입력해 주세요.");
+            lines.push("");
+            lines.push("※ 키를 등록하면 단축키 링크에도 자동으로 안전하게 탑재되어");
+            lines.push("   macOS Shortcuts에서 이전과 똑같이 중단 없이 작동합니다!");
+            lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            return res.status(403).send(lines.join("\n"));
+          }
+        }
+      }
 
       if (!text || typeof text !== "string" || !text.trim()) {
         if (isHtml) {
@@ -709,6 +915,10 @@ Text to translate:
 
         translationResult = response?.text || "";
         engineName = `Gemini 초고속 신학 번역 (${targetLang})`;
+
+        // Capture and commit actual token usage
+        const actualTokens = response?.usageMetadata?.totalTokenCount || response?.usageMetadata?.total_token_count || estimatedTokens;
+        commitTokens(clientId, req.ip || "", actualTokens);
       }
 
       if (isHtml) {

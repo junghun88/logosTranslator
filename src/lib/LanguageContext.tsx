@@ -378,6 +378,22 @@ const dictionary: Record<string, Record<UiLang, string>> = {
   clearConfirm: {
     en: "Cleared",
     ko: "초기화됨",
+  },
+  dailyTokenUsageTitle: {
+    en: "Daily Free Token Meter",
+    ko: "일일 무료 제공량 (Token Meter)",
+  },
+  dailyTokenUsageDesc: {
+    en: "You have 5,000 free tokens daily. Exceeding this requires registering your own Gemini API key.",
+    ko: "매일 5,000 토큰의 무료 혜택이 제공됩니다. 한도 초과 시 우측 상단의 '⚙️ 개인 API 키 설정' 메뉴에서 본인 키를 등록하여 계속 사용할 수 있습니다.",
+  },
+  tokenMeterLabel: {
+    en: "Tokens Used Today:",
+    ko: "오늘 사용량:",
+  },
+  customKeyBypassActive: {
+    en: "✨ Unlimited (Personal Key Active)",
+    ko: "✨ 한도 없음 (개인 API 키 적용 중)",
   }
 };
 
