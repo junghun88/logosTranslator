@@ -11,7 +11,9 @@ import {
   ChevronLeft,
   Sparkles,
   Cpu,
-  Monitor
+  Monitor,
+  AlertTriangle,
+  Terminal
 } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 
@@ -21,6 +23,7 @@ export default function MacShortcutGuide() {
   const [activeStep, setActiveStep] = useState(0);
   const [copiedTextUrl, setCopiedTextUrl] = useState(false);
   const [copiedWebUrl, setCopiedWebUrl] = useState(false);
+  const [copiedTerminal, setCopiedTerminal] = useState(false);
 
   const appUrl = window.location.origin;
 
@@ -525,6 +528,81 @@ export default function MacShortcutGuide() {
             <Sparkles className="w-4 h-4 text-stone-950" />
             <span>{getLabel("downloadBtn")}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Troubleshooting/Security Policy Alert (Fixes "Unsigned Shortcuts Error") */}
+      <div className="mb-6 p-5 bg-amber-50/60 border border-amber-200 rounded-xl shadow-sm text-stone-800">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div className="space-y-3 flex-1">
+            <div>
+              <h4 className="font-serif text-sm font-semibold text-amber-900 flex items-center gap-1.5">
+                {uiLang === "ko" ? "💡 '서명되지 않은 단축어는 지원되지 않습니다' 오류 해결법" : "💡 Fix: 'Unsigned shortcut files are not supported' Error"}
+              </h4>
+              <p className="text-xs text-stone-600 leading-relaxed mt-1">
+                {uiLang === "ko" 
+                  ? "macOS의 강화된 보안 정책으로 인해, 웹 브라우저에서 수동 다운로드한 로컬 단축어(.shortcut) 파일의 더블클릭 설치가 차단될 수 있습니다. 아래의 초간단 방법으로 즉시 해결해 보세요:"
+                  : "Due to macOS security policies, downloaded local .shortcut files may be blocked from importing via double-click. Use one of these simple fixes:"}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              {/* Method A: Terminal Import */}
+              <div className="p-3 bg-white rounded-lg border border-stone-200 space-y-2 shadow-inner">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
+                  <Terminal className="w-4 h-4 text-stone-600" />
+                  <span>{uiLang === "ko" ? "방법 1: 터미널로 즉시 추가하기 (강력 추천 ⭐️)" : "Fix 1: Fast Terminal Import (Recommended ⭐️)"}</span>
+                </div>
+                <p className="text-[11px] text-stone-500 leading-normal">
+                  {uiLang === "ko" 
+                    ? "터미널 앱을 실행하고 아래의 가져오기 명령어를 입력하면 보안 서명 검사를 생략하고 단축어 앱에 다이렉트로 추가됩니다!"
+                    : "Open your Terminal app and paste this command to bypass GUI signatures and install directly:"}
+                </p>
+                <div className="flex items-center gap-1.5 bg-stone-50 p-1.5 rounded border border-stone-200">
+                  <span className="font-mono text-[10px] text-stone-700 select-all truncate flex-1">
+                    shortcuts import ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut"}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const cmd = `shortcuts import ~/Downloads/${activeTab === "native" ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut"}`;
+                      navigator.clipboard.writeText(cmd);
+                      setCopiedTerminal(true);
+                      setTimeout(() => setCopiedTerminal(false), 2000);
+                    }}
+                    className="p-1 hover:bg-stone-200 rounded text-stone-600 cursor-pointer transition-colors"
+                    title="Copy command"
+                  >
+                    {copiedTerminal ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Method B: Preferences Toggle */}
+              <div className="p-3 bg-white rounded-lg border border-stone-200 space-y-2 shadow-inner">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
+                  <Settings className="w-4 h-4 text-stone-600" />
+                  <span>{uiLang === "ko" ? "방법 2: 설정에서 외부 스크립트 허용하기" : "Fix 2: Enable Untrusted Shortcuts"}</span>
+                </div>
+                <p className="text-[11px] text-stone-500 leading-normal">
+                  {uiLang === "ko" 
+                    ? "단축어 앱 실행 -> 상단 메뉴 '단축어 > 설정... (Cmd + ,)' -> '고급' 탭 -> '스크립트 실행 허용' 및 '신뢰할 수 없는 단축어 허용'에 체크합니다."
+                    : "Open Shortcuts app -> Click 'Shortcuts > Settings' -> Go to 'Advanced' tab -> Check 'Allow Running Scripts' and 'Allow Untrusted Shortcuts'."}
+                </p>
+                <div className="text-[10px] text-stone-400 italic">
+                  {uiLang === "ko" 
+                    ? "※ 또는 터미널에 defaults write com.apple.shortcuts SecurityAllowUntrusted -bool true 를 입력하세요."
+                    : "※ Or run: defaults write com.apple.shortcuts SecurityAllowUntrusted -bool true"}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
