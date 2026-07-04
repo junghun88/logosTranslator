@@ -96,19 +96,19 @@ export default function MacShortcutGuide() {
 
   const nativeStepsEn = [
     {
-      title: "1. Open macOS Shortcuts App",
-      description: "Launch the native macOS 'Shortcuts' app to design a new one-click translation automation.",
+      title: "1. Open macOS Shortcuts App (or Download Shortcut)",
+      description: "Launch the native macOS 'Shortcuts' app to design a new one-click translation automation, or download our ready-made file for macOS Tahoe.",
       icon: Compass,
       instructions: [
         "Open Spotlight (Cmd + Space), search for 'Shortcuts' and open it.",
-        "Click the '+' icon in the upper right corner to create a new shortcut.",
-        "Rename the shortcut to 'Logos Translator' or any name you prefer."
+        "Alternatively, click the 'Download macOS Tahoe Shortcut' button below to get the pre-configured file with your personalized keys!",
+        "If setting up manually, click the '+' icon in the upper right corner to create a new shortcut and name it 'Logos Translator'."
       ],
-      imageTip: "The Shortcuts app is pre-installed for free on macOS Monterey and later."
+      imageTip: "The Shortcuts app is pre-installed for free on macOS Tahoe (macOS 16) and later."
     },
     {
       title: "2. Set as Quick Action & Clipboard Fallback",
-      description: "Enable the services menu integration and set up a reliable clipboard fallback in case Logos doesn't pass the dragged text directly.",
+      description: "Enable the services menu integration and set up a reliable clipboard fallback in case Logos doesn't pass the dragged text directly on macOS Tahoe.",
       icon: Settings,
       instructions: [
         "Click 'Shortcut Details' (the toggle settings/slider icon button in the top right panel).",
@@ -117,11 +117,11 @@ export default function MacShortcutGuide() {
         "Click the text '(if there's no input)' at the end of that first action block.",
         "Select **[Clipboard]** (or 'Clipboard contents') from the dropdown options as the fallback!"
       ],
-      imageTip: "With this setup, if dragging fails, simply copy the text (Cmd+C) and press your keyboard shortcut to run the translation instantly."
+      imageTip: "With this setup, if dragging fails on Tahoe, simply copy the text (Cmd+C) and press your keyboard shortcut to run the translation instantly."
     },
     {
       title: "3. Add URL Action Block",
-      description: "Register the API server URL that handles high-speed translations and generates the visual popup cards.",
+      description: "Register the API server URL that handles high-speed translations and generates the visual popup cards on macOS Tahoe.",
       icon: Cpu,
       instructions: [
         "Search for 'URL' in the right-hand actions library and drag it into the editor.",
@@ -132,10 +132,10 @@ export default function MacShortcutGuide() {
     },
     {
       title: "4. Display Web Popup Card",
-      description: "Configure the popup window to display an interactive card with instant Copy buttons.",
+      description: "Configure the popup window to display an interactive card with instant Copy buttons on macOS Tahoe.",
       icon: Sparkles,
       instructions: [
-        "🎯 [Option A: Web Popup Mode - Highly Recommended ⭐️]",
+        "🎯 [Option A: Web Popup Mode - Highly Recommended on macOS Tahoe ⭐️]",
         "1. Search for 'Show Web Page' or 'Show Web Page in Safari' in the actions panel and add it.",
         "2. Map the 'URL' block you created in Step 3 as the input.",
         "3. Now, pressing the shortcut triggers an elegant overlay with dedicated buttons to copy individual components.",
@@ -149,7 +149,7 @@ export default function MacShortcutGuide() {
     },
     {
       title: "5. Map Keyboard Shortcut (Cmd + Option + Shift + T)",
-      description: "Map a global hotkey to translate selected texts instantly while reading in Logos.",
+      description: "Map a global hotkey to translate selected texts instantly while reading in Logos on macOS Tahoe.",
       icon: Keyboard,
       instructions: [
         "Return to the 'Shortcut Details' panel on the right side.",
@@ -162,15 +162,15 @@ export default function MacShortcutGuide() {
 
   const nativeStepsKo = [
     {
-      title: "1. macOS 단축어 앱 열기",
-      description: "클릭 한 번으로 고정밀 번역 및 주해 팝업을 연동하기 위해 macOS 기본 '단축어' 앱을 실행합니다.",
+      title: "1. macOS 단축어 앱 열기 (또는 단축어 즉시 다운로드)",
+      description: "클릭 한 번으로 고정밀 번역 및 주해 팝업을 연동하기 위해 macOS 기본 '단축어' 앱을 실행하거나, 아래에서 제공하는 완제품 단축어 파일을 다운로드해 가져옵니다.",
       icon: Compass,
       instructions: [
         "Spotlight(Cmd + Space)을 열어 '단축어' 혹은 'Shortcuts'를 검색해 실행합니다.",
-        "우측 상단의 '+' 버튼을 눌러 새로운 단축어를 생성합니다.",
-        "단축어 이름을 'Logos Translator' 또는 원하는 이름으로 설정하세요."
+        "또는 아래의 'macOS Tahoe 단축어 다운로드' 버튼을 클릭하여 사용자 맞춤 주소와 키가 포함된 완성형 단축어를 받으세요!",
+        "수동 생성 시에는 우측 상단의 '+' 버튼을 눌러 새로운 단축어를 생성하고 이름을 'Logos Translator' 등으로 설정합니다."
       ],
-      imageTip: "단축어 앱은 macOS Monterey(몬터레이) 이상의 기기에 기본적으로 설치되어 있습니다."
+      imageTip: "단축어 앱은 macOS Tahoe(타호, macOS 16) 환경에서 기본 제공되어 더욱 빠르고 쾌적한 연동 환경을 보장합니다."
     },
     {
       title: "2. 빠른 동작 설정 및 클립보드 예외 처리",
@@ -187,7 +187,7 @@ export default function MacShortcutGuide() {
     },
     {
       title: "3. URL 동작 블록 추가",
-      description: "초고속 실시간 번역 및 분석 카드를 생성해 줄 API 주소를 등록합니다.",
+      description: "macOS Tahoe 환경에 대응하는 초고속 실시간 번역 및 분석 카드를 생성해 줄 API 주소를 등록합니다.",
       icon: Cpu,
       instructions: [
         "우측의 동작 라이브러리 검색창에 'URL'을 검색해 편집창으로 드래그합니다.",
@@ -201,10 +201,10 @@ export default function MacShortcutGuide() {
       description: "로고스 성경 프로그램 위에 직접 복사 버튼이 포함된 팝업 카드가 뜨도록 설정합니다.",
       icon: Sparkles,
       instructions: [
-        "🎯 [옵션 A: 웹 팝업 모드 - 매우 권장 ⭐️]",
+        "🎯 [옵션 A: 웹 팝업 모드 - macOS Tahoe 매우 권장 ⭐️]",
         "1. 우측 동작 라이브러리에서 '웹 페이지 표시' 또는 'Show Web Page'를 검색해 추가합니다.",
         "2. 이전 단계에서 생성한 'URL' 블록을 입력 값으로 지정하세요.",
-        "3. 이제 단축키를 누르면 아름다운 반투명 팝업창에 개별 복사 버튼이 포함된 주해 카드가 뜹니다.",
+        "3. 이제 단축키를 누르면 macOS Tahoe의 부드러운 애니메이션과 함께 개별 복사 버튼이 포함된 주해 카드가 팝업됩니다.",
         "",
         "📝 [옵션 B: 백그라운드 텍스트 복사 모드]",
         "1. 'URL 콘텐츠 가져오기(Get Contents of URL)' 블록을 추가합니다.",
@@ -229,7 +229,7 @@ export default function MacShortcutGuide() {
   const browserStepsEn = [
     {
       title: "1. Create Shortcut & Enable Clipboard",
-      description: "Establish the basic shortcut framework to transmit copied text safely from Logos to your web browser.",
+      description: "Establish the basic shortcut framework on macOS Tahoe to transmit copied text safely from Logos to your web browser.",
       icon: Compass,
       instructions: [
         "Open the macOS 'Shortcuts' app and click the '+' icon in the top toolbar.",
@@ -252,7 +252,7 @@ export default function MacShortcutGuide() {
     },
     {
       title: "3. Map Shortcut (Cmd + Option + Shift + T)",
-      description: "Assign a quick hotkey to trigger the browser-based workspace.",
+      description: "Assign a quick hotkey to trigger the browser-based workspace on macOS Tahoe.",
       icon: Keyboard,
       instructions: [
         "In the right-hand details tab, assign the keyboard combination 'Cmd + Option + Shift + T'.",
@@ -314,6 +314,68 @@ export default function MacShortcutGuide() {
     setTimeout(() => setCopiedWebUrl(false), 2000);
   };
 
+  const handleDownloadShortcut = () => {
+    const isNative = activeTab === "native";
+    const targetUrl = isNative ? getShortcutUrl() : getWebUrl();
+    const actionId = isNative ? "is.workflow.actions.showwebpage" : "is.workflow.actions.openurl";
+    
+    const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>WFWorkflowActions</key>
+	<array>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.url</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFURLSpec</key>
+				<string>${targetUrl.replace(/&/g, "&amp;")}</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>${actionId}</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>Type</key>
+						<string>ExtensionInput</string>
+					</dict>
+				</dict>
+			</dict>
+		</dict>
+	</array>
+	<key>WFWorkflowClientVersion</key>
+	<string>1200</string>
+	<key>WFWorkflowInputContentItemClasses</key>
+	<array>
+		<string>WFStringContentItem</string>
+	</array>
+	<key>WFWorkflowTypes</key>
+	<array>
+		<string>ActionExtension</string>
+		<string>QuickAction</string>
+	</array>
+</dict>
+</plist>`;
+
+    const blob = new Blob([plistContent], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const filename = isNative ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut";
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const currentStepData = steps[activeStep] || steps[0];
   const StepIcon = currentStepData.icon;
 
@@ -325,12 +387,20 @@ export default function MacShortcutGuide() {
   // Localized texts
   const labels = {
     title: {
-      en: "macOS Logos Keyboard Shortcut Integration Guide",
-      ko: "macOS 로고스 성경 단축키 연동 가이드",
+      en: "macOS Tahoe (v16) Logos Keyboard Shortcut Integration Guide",
+      ko: "macOS Tahoe (맥OS 16) 로고스 성경 단축키 연동 가이드",
     },
     desc: {
-      en: "Translate any selected English text in your Logos Bible app instantly by mapping a system-wide hotkey: Cmd + Option + Shift + T.",
-      ko: "로고스 성경 인앱에서 영어 단어를 드래그하고 전역 단축키인 Cmd + Option + Shift + T를 누르는 즉시 번역 결과를 소환합니다.",
+      en: "Optimized for macOS Tahoe. Translate any selected English text in your Logos Bible app instantly by mapping a system-wide hotkey: Cmd + Option + Shift + T.",
+      ko: "macOS Tahoe 버전에 완전 최적화 완료! 로고스 성경 인앱에서 단어를 드래그하고 전역 단축키 Cmd + Option + Shift + T를 누르면 초고속 AI 주해 카드가 나타납니다.",
+    },
+    downloadBtn: {
+      en: "Download macOS Tahoe Shortcut (.shortcut)",
+      ko: "macOS Tahoe 전용 단축어 다운로드 (.shortcut)",
+    },
+    downloadDesc: {
+      en: "This download contains your personalized API key and Client ID pre-configured! Double-click it to install instantly on macOS Tahoe.",
+      ko: "사용자의 개인 API 키 및 Client ID 설정이 미리 주입된 완제품 단축어 파일을 다운로드합니다. 복잡한 입력 없이 더블 클릭 한 번으로 자동 등록됩니다!",
     },
     tabNative: {
       en: "Method 1: Native Floating Popup (Highly Recommended - No Browser Needed)",
@@ -431,6 +501,30 @@ export default function MacShortcutGuide() {
           <p className="text-sm text-stone-600 mt-1">
             {getLabel("desc")}
           </p>
+        </div>
+      </div>
+
+      {/* macOS Tahoe 1-Click Auto Installer Section */}
+      <div className="mb-6 p-5 bg-gradient-to-r from-stone-900 to-stone-800 text-white rounded-xl shadow-md border border-stone-700">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded-full">
+              <Sparkles className="w-3 h-3" /> macOS Tahoe One-click Installer
+            </span>
+            <h4 className="font-serif text-base font-semibold text-stone-100 mt-1">
+              {uiLang === "ko" ? "macOS Tahoe 1초 자동 설치 단축어 파일 (.shortcut)" : "macOS Tahoe 1-Second Auto-Setup Shortcut File (.shortcut)"}
+            </h4>
+            <p className="text-xs text-stone-300 leading-relaxed max-w-2xl">
+              {getLabel("downloadDesc")}
+            </p>
+          </div>
+          <button
+            onClick={handleDownloadShortcut}
+            className="w-full md:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-stone-950 rounded-lg text-xs font-bold transition-all shadow flex items-center justify-center gap-2 shrink-0 border border-amber-600 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-stone-950" />
+            <span>{getLabel("downloadBtn")}</span>
+          </button>
         </div>
       </div>
 
