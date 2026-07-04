@@ -940,9 +940,9 @@ Text to translate:
 
         translationResult = response?.text || "";
         engineName = `Gemini 초고속 신학 번역 (${targetLang})`;
-
-        commitRequest(clientId, req.ip || "");
       }
+
+      commitRequest(clientId, req.ip || "");
 
       const finalKey = (clientId && clientId.trim()) || req.ip || "unknown";
       const finalDailyTotal = requestStore[finalKey]?.count || 0;
