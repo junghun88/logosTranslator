@@ -523,6 +523,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
         used: 1,
         dailyTotal: finalDailyTotal,
         limit: 50,
+        date: getTodayString(),
         hasCustomKey
       };
 
@@ -591,9 +592,15 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
         currentUsage = record.count;
       }
       
+      // Explicitly prevent browser from caching this status endpoint
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+
       res.json({
         used: currentUsage,
         limit: 50,
+        date: today,
         hasCustomKey
       });
     } catch (error) {

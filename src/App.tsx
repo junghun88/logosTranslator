@@ -62,7 +62,8 @@ export default function App() {
       const activeGeminiKey = geminiKeyToUse !== undefined ? geminiKeyToUse : (savedGeminiKey || localStorage.getItem("logos_custom_gemini_key") || "");
       if (!activeCid) return;
 
-      const res = await fetch(`/api/usage?clientId=${encodeURIComponent(activeCid)}&geminiApiKey=${encodeURIComponent(activeGeminiKey)}`);
+      // Add cache buster 't' to ensure fresh data is fetched from the server without browser caching
+      const res = await fetch(`/api/usage?clientId=${encodeURIComponent(activeCid)}&geminiApiKey=${encodeURIComponent(activeGeminiKey)}&t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         setDailyTokenUsage({
@@ -70,7 +71,9 @@ export default function App() {
           limit: data.limit
         });
         localStorage.setItem("logos_translation_count", String(data.used));
-        localStorage.setItem("logos_translation_count_date", new Date().toISOString().split("T")[0]);
+        if (data.date) {
+          localStorage.setItem("logos_translation_count_date", data.date);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch realtime usage count from server:", err);
@@ -362,7 +365,11 @@ export default function App() {
           limit: parsedData.tokenUsage.limit
         });
         localStorage.setItem("logos_translation_count", String(parsedData.tokenUsage.dailyTotal));
-        localStorage.setItem("logos_translation_count_date", new Date().toISOString().split("T")[0]);
+        if (parsedData.tokenUsage.date) {
+          localStorage.setItem("logos_translation_count_date", parsedData.tokenUsage.date);
+        } else {
+          localStorage.setItem("logos_translation_count_date", new Date().toISOString().split("T")[0]);
+        }
       }
     } catch (err: any) {
       console.error("Translation request failed:", err);
