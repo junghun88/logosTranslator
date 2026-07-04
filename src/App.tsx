@@ -13,14 +13,23 @@ import {
   ExternalLink,
   ClipboardPaste,
   BookMarked,
-  Info
+  Info,
+  Key,
+  Globe,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  Trash
 } from "lucide-react";
 import { TranslationResult, SavedTranslation } from "./types";
 import TranslationViewer from "./components/TranslationViewer";
 import HistoryList from "./components/HistoryList";
 import MacShortcutGuide from "./components/MacShortcutGuide";
+import { useLanguage } from "./lib/LanguageContext";
 
 export default function App() {
+  const { uiLang, setUiLang, t } = useLanguage();
+
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"balanced" | "scholarly" | "devotional">("balanced");
   const [targetLang, setTargetLang] = useState<string>("Korean");
@@ -31,6 +40,68 @@ export default function App() {
   const [history, setHistory] = useState<SavedTranslation[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+
+  // Custom API Keys State
+  const [savedGeminiKey, setSavedGeminiKey] = useState("");
+  const [savedDeeplKey, setSavedDeeplKey] = useState("");
+  const [customGeminiKey, setCustomGeminiKey] = useState("");
+  const [customDeeplKey, setCustomDeeplKey] = useState("");
+  const [showApiSettings, setShowApiSettings] = useState(false);
+  const [showGeminiPwd, setShowGeminiPwd] = useState(false);
+  const [showDeeplPwd, setShowDeeplPwd] = useState(false);
+  const [keysSavedStatus, setKeysSavedStatus] = useState<"idle" | "saved" | "cleared">("idle");
+
+  // Load saved keys on mount
+  useEffect(() => {
+    try {
+      const gemini = localStorage.getItem("logos_custom_gemini_key") || "";
+      const deepl = localStorage.getItem("logos_custom_deepl_key") || "";
+      setSavedGeminiKey(gemini);
+      setCustomGeminiKey(gemini);
+      setSavedDeeplKey(deepl);
+      setCustomDeeplKey(deepl);
+    } catch (e) {
+      console.error("Failed to load saved API keys:", e);
+    }
+  }, []);
+
+  // Save personal API keys
+  const handleSaveApiKeys = () => {
+    try {
+      localStorage.setItem("logos_custom_gemini_key", customGeminiKey);
+      localStorage.setItem("logos_custom_deepl_key", customDeeplKey);
+      setSavedGeminiKey(customGeminiKey);
+      setSavedDeeplKey(customDeeplKey);
+      setKeysSavedStatus("saved");
+      
+      // Notify other components (like MacShortcutGuide)
+      window.dispatchEvent(new Event("logos_keys_updated"));
+
+      setTimeout(() => setKeysSavedStatus("idle"), 3000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Clear personal API keys
+  const handleClearApiKeys = () => {
+    try {
+      localStorage.removeItem("logos_custom_gemini_key");
+      localStorage.removeItem("logos_custom_deepl_key");
+      setCustomGeminiKey("");
+      setCustomDeeplKey("");
+      setSavedGeminiKey("");
+      setSavedDeeplKey("");
+      setKeysSavedStatus("cleared");
+
+      // Notify other components (like MacShortcutGuide)
+      window.dispatchEvent(new Event("logos_keys_updated"));
+
+      setTimeout(() => setKeysSavedStatus("idle"), 3000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Loading indicator messages to show intelligence and depth
   const loadingMessages = [
@@ -66,6 +137,24 @@ export default function App() {
     const textParam = params.get("text");
     const modeParam = params.get("mode");
     const targetLangParam = params.get("targetLang") || params.get("target_lang") || params.get("lang");
+    const geminiKeyParam = params.get("gemini_key") || params.get("geminiApiKey");
+    const deeplKeyParam = params.get("deepl_key") || params.get("deeplApiKey");
+
+    let activeGeminiKey = localStorage.getItem("logos_custom_gemini_key") || "";
+    let activeDeeplKey = localStorage.getItem("logos_custom_deepl_key") || "";
+
+    if (geminiKeyParam) {
+      localStorage.setItem("logos_custom_gemini_key", geminiKeyParam);
+      setSavedGeminiKey(geminiKeyParam);
+      setCustomGeminiKey(geminiKeyParam);
+      activeGeminiKey = geminiKeyParam;
+    }
+    if (deeplKeyParam) {
+      localStorage.setItem("logos_custom_deepl_key", deeplKeyParam);
+      setSavedDeeplKey(deeplKeyParam);
+      setCustomDeeplKey(deeplKeyParam);
+      activeDeeplKey = deeplKeyParam;
+    }
 
     if (textParam) {
       let decodedText = textParam;
@@ -96,7 +185,7 @@ export default function App() {
 
       // Automatically trigger translation with a slight delay to allow rendering
       const timer = setTimeout(() => {
-        handleTranslate(decodedText, finalMode, finalLang);
+        handleTranslate(decodedText, finalMode, finalLang, activeGeminiKey, activeDeeplKey);
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -118,7 +207,9 @@ export default function App() {
   const handleTranslate = async (
     textToTranslate: string = text,
     modeToUse: "balanced" | "scholarly" | "devotional" = mode,
-    langToUse: string = targetLang
+    langToUse: string = targetLang,
+    geminiKeyOverride?: string,
+    deeplKeyOverride?: string
   ) => {
     if (!textToTranslate.trim()) {
       setError("Please enter the text to be translated.");
@@ -139,7 +230,9 @@ export default function App() {
         body: JSON.stringify({
           text: textToTranslate,
           mode: modeToUse,
-          targetLang: langToUse
+          targetLang: langToUse,
+          geminiApiKey: geminiKeyOverride !== undefined ? geminiKeyOverride : savedGeminiKey,
+          deeplApiKey: deeplKeyOverride !== undefined ? deeplKeyOverride : savedDeeplKey
         })
       });
 
@@ -271,44 +364,92 @@ export default function App() {
     <div className="min-h-screen bg-stone-100 text-stone-900 font-sans selection:bg-stone-800 selection:text-white">
       {/* Elegantly Crafted Academic Header */}
       <header className="bg-white border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-stone-900 text-stone-100 flex items-center justify-center rounded-xl shadow-sm">
+            <div className="w-10 h-10 bg-stone-900 text-stone-100 flex items-center justify-center rounded-xl shadow-sm shrink-0">
               <Languages className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-serif text-2xl font-black tracking-tight text-stone-900">
-                  Logos Translation Assistant
+                  {t("title")}
                 </h1>
                 <span className="hidden sm:inline-block bg-amber-50 text-amber-800 border border-amber-200 text-[10px] px-2 py-0.5 rounded-full font-serif font-semibold">
-                  Theology Edition
+                  {t("subtitle")}
                 </span>
               </div>
               <p className="text-xs text-stone-500 font-serif mt-0.5">
-                MacBook Logos Bible Translation & Theological Parsing System
+                {t("tagline")}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Language Toggle Segmented Control */}
+            <div className="inline-flex bg-stone-100 p-0.5 border border-stone-200 rounded-lg text-xs font-semibold shrink-0">
+              <button
+                onClick={() => setUiLang("ko")}
+                className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1 ${
+                  uiLang === "ko" 
+                    ? "bg-white text-stone-900 shadow-xs font-bold" 
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                <Globe className="w-3 h-3 text-stone-400" />
+                한국어
+              </button>
+              <button
+                onClick={() => setUiLang("en")}
+                className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1 ${
+                  uiLang === "en" 
+                    ? "bg-white text-stone-900 shadow-xs font-bold" 
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                <Globe className="w-3 h-3 text-stone-400" />
+                English
+              </button>
+            </div>
+
+            {/* Custom API Key Configuration Toggle */}
             <button
-              onClick={() => setShowGuide(!showGuide)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              onClick={() => {
+                setShowApiSettings(!showApiSettings);
+                if (showGuide) setShowGuide(false);
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                showApiSettings 
+                  ? "bg-stone-900 text-white shadow-sm" 
+                  : "bg-stone-50 hover:bg-stone-200 text-stone-700 border border-stone-300"
+              }`}
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span>{t("personalKeysBtn")}</span>
+            </button>
+
+            {/* Guide Toggle */}
+            <button
+              onClick={() => {
+                setShowGuide(!showGuide);
+                if (showApiSettings) setShowApiSettings(false);
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                 showGuide 
                   ? "bg-stone-900 text-white shadow-sm" 
                   : "bg-stone-50 hover:bg-stone-200 text-stone-700 border border-stone-300"
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
-              {showGuide ? "Collapse Guide" : " macOS Shortcuts Guide"}
+              {showGuide ? t("collapseGuide") : t("shortcutsGuide")}
             </button>
-            <span className="h-6 w-px bg-stone-200 hidden md:block"></span>
-            <div className="hidden md:flex flex-col items-end">
-              <span className="text-[10px] font-mono text-stone-400 font-semibold uppercase tracking-wider">Engine Status</span>
+
+            <span className="h-6 w-px bg-stone-200 hidden xl:block"></span>
+            
+            <div className="hidden xl:flex flex-col items-end shrink-0">
+              <span className="text-[10px] font-mono text-stone-400 font-semibold uppercase tracking-wider">{t("engineStatus")}</span>
               <span className="text-xs text-stone-700 font-medium flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Gemini AI Online
+                {t("geminiOnline")}
               </span>
             </div>
           </div>
@@ -318,6 +459,126 @@ export default function App() {
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
+        {/* Personal API Keys Settings Panel */}
+        <AnimatePresence>
+          {showApiSettings && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-white border border-amber-200 rounded-xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2.5 border-b border-stone-100 pb-3">
+                  <div className="w-8 h-8 bg-amber-50 text-amber-950 flex items-center justify-center rounded-lg border border-amber-200">
+                    <Key className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-stone-900 text-base">{t("apiSettingsTitle")}</h3>
+                    <p className="text-xs text-stone-500 mt-0.5">{t("apiSettingsDesc")}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Gemini Key Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-serif font-bold text-stone-700 flex items-center justify-between">
+                      <span>{t("geminiKeyLabel")}</span>
+                      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-[10px] text-amber-800 hover:underline flex items-center gap-0.5">
+                        {t("getFreeApiKey")} <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showGeminiPwd ? "text" : "password"}
+                        placeholder="AIzaSy..."
+                        value={customGeminiKey}
+                        onChange={(e) => setCustomGeminiKey(e.target.value)}
+                        className="w-full p-2.5 pr-10 border border-stone-200 rounded-lg text-xs leading-relaxed font-mono focus:outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500 bg-stone-50/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGeminiPwd(!showGeminiPwd)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700"
+                      >
+                        {showGeminiPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* DeepL Key Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-serif font-bold text-stone-700 flex items-center justify-between">
+                      <span>{t("deeplKeyLabel")}</span>
+                      <a href="https://www.deepl.com/pro-api" target="_blank" rel="noreferrer" className="text-[10px] text-stone-600 hover:underline flex items-center gap-0.5">
+                        DeepL API Portal <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showDeeplPwd ? "text" : "password"}
+                        placeholder="e.g. 12345678-abcd-efgh-ijkl-1234567890ab:fx"
+                        value={customDeeplKey}
+                        onChange={(e) => setCustomDeeplKey(e.target.value)}
+                        className="w-full p-2.5 pr-10 border border-stone-200 rounded-lg text-xs leading-relaxed font-mono focus:outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500 bg-stone-50/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowDeeplPwd(!showDeeplPwd)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700"
+                      >
+                        {showDeeplPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveApiKeys}
+                      className="px-4 py-2 bg-stone-900 hover:bg-stone-950 text-stone-50 font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle className="w-4 h-4 text-stone-300" />
+                      {t("saveKeysBtn")}
+                    </button>
+                    <button
+                      onClick={handleClearApiKeys}
+                      className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-lg transition-colors border border-stone-200 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash className="w-4 h-4 text-stone-500" />
+                      {t("clearKeysBtn")}
+                    </button>
+                  </div>
+
+                  <AnimatePresence>
+                    {keysSavedStatus === "saved" && (
+                      <motion.span
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-xs text-emerald-800 font-semibold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5"
+                      >
+                        <span>✓</span> {t("keysSavedAlert")}
+                      </motion.span>
+                    )}
+                    {keysSavedStatus === "cleared" && (
+                      <motion.span
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-xs text-amber-800 font-semibold bg-amber-50 px-3 py-1 rounded-full border border-amber-200"
+                      >
+                        {t("keysClearedAlert")}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* macOS Integration Guide Banner */}
         <AnimatePresence>
           {showGuide && (

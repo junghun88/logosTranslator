@@ -329,6 +329,56 @@ const dictionary: Record<string, Record<UiLang, string>> = {
   loadMsg3: { en: "Translating passage into target theological terms...", ko: "신학적 용어를 대입하여 한글 주해 번역 중..." },
   loadMsg4: { en: "Generating deep theological insights & historical context...", ko: "역사적 주해 주석 및 심층 묵상적 통찰 생성 중..." },
   loadMsg5: { en: "Curating relevant biblical cross-references...", ko: "주제와 연관된 상호참조(Cross-Ref) 성경 구절 발굴 중..." },
+
+  // API Keys Config
+  apiSettingsTitle: {
+    en: "Personal API Keys Config (Pay-As-You-Go)",
+    ko: "개인 API 키 설정 (개인 과금 및 개인 키 사용)",
+  },
+  apiSettingsDesc: {
+    en: "Configure your own Gemini and DeepL API keys. All translation requests will be billed directly to your personal accounts. Keys are stored locally and securely in your browser.",
+    ko: "본인의 Gemini 및 DeepL API 키를 입력하여 사용합니다. 모든 번역 및 주해 요청은 개인 계정으로 과금됩니다. API 키는 브라우저 로컬 저장소(LocalStorage)에 안전하게 저장됩니다.",
+  },
+  geminiKeyLabel: {
+    en: "Personal Gemini API Key",
+    ko: "개인 구글 Gemini API Key",
+  },
+  deeplKeyLabel: {
+    en: "Personal DeepL API Key (Optional)",
+    ko: "개인 DeepL API Key (선택 사항)",
+  },
+  saveKeysBtn: {
+    en: "Save API Keys",
+    ko: "API 키 저장 완료",
+  },
+  clearKeysBtn: {
+    en: "Clear Saved Keys",
+    ko: "저장된 키 초기화",
+  },
+  keysSavedAlert: {
+    en: "Your personal API keys have been saved successfully!",
+    ko: "개인 API 키가 안전하게 저장되었습니다!",
+  },
+  keysClearedAlert: {
+    en: "Personal API keys cleared. Reverting to server default credentials.",
+    ko: "개인 API 키가 초기화되었습니다. 서버 기본 관리자 키를 사용합니다.",
+  },
+  languageToggleLabel: {
+    en: "Language",
+    ko: "언어 설정",
+  },
+  personalKeysBtn: {
+    en: "⚙️ API Keys Settings",
+    ko: "⚙️ 개인 API 키 설정",
+  },
+  saveConfirm: {
+    en: "Saved",
+    ko: "저장됨",
+  },
+  clearConfirm: {
+    en: "Cleared",
+    ko: "초기화됨",
+  }
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

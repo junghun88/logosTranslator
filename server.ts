@@ -158,19 +158,25 @@ async function startServer() {
   }
 
   // Shared helper function to do the translation and analysis
-  async function translateAndAnalyzeCore(text: string, mode: string = "balanced", targetLang: string = "Korean") {
+  async function translateAndAnalyzeCore(
+    text: string, 
+    mode: string = "balanced", 
+    targetLang: string = "Korean",
+    customGeminiKey?: string,
+    customDeeplKey?: string
+  ) {
     console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}, Target Language: ${targetLang}`);
     
-    const apiKey = getCleanEnv("GEMINI_API_KEY");
+    const apiKey = (customGeminiKey && customGeminiKey.trim()) || getCleanEnv("GEMINI_API_KEY");
     if (!apiKey) {
       console.error("[Translate API] Error: GEMINI_API_KEY is not configured.");
-      throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 브라우저 우측 상단 Settings 메뉴의 Secrets 패널에서 GEMINI_API_KEY를 등록해 주세요.");
+      throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 서비스 관리자의 GEMINI_API_KEY가 등록되어 있지 않거나 사용자의 개인 API Key가 입력되지 않았습니다. 앱 설정이나 우측 상단 Secrets 메뉴에서 등록해 주세요.");
     }
 
     // Check and invoke DeepL if key is configured (support both DEEPL_API_KEY and DEEP_API_KEY)
     let deeplTranslation: string | null = null;
     let deeplError: string | null = null;
-    const deeplKey = getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
+    const deeplKey = (customDeeplKey && customDeeplKey.trim()) || getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
     const deeplLangCode = getDeepLLangCode(targetLang);
 
     if (deeplKey && deeplLangCode) {
@@ -418,12 +424,15 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
   // API route for translation and theological analysis (JSON Response)
   app.post("/api/translate", async (req, res) => {
     try {
-      const { text, mode, targetLang } = req.body;
+      const { text, mode, targetLang, geminiApiKey, deeplApiKey } = req.body;
       if (!text || typeof text !== "string") {
         return res.status(400).json({ error: "Text is required" });
       }
 
-      const result = await translateAndAnalyzeCore(text, mode, targetLang || "Korean");
+      const customGeminiKey = geminiApiKey || (req.headers["x-gemini-api-key"] as string);
+      const customDeeplKey = deeplApiKey || (req.headers["x-deepl-api-key"] as string);
+
+      const result = await translateAndAnalyzeCore(text, mode, targetLang || "Korean", customGeminiKey, customDeeplKey);
       res.json(result);
     } catch (error: any) {
       console.error("Translation API Error:", error);
@@ -481,6 +490,9 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       const text = (req.body.text || req.query.text) as string;
       const mode = (req.body.mode || req.query.mode || "balanced") as string;
       const targetLang = (req.body.targetLang || req.query.targetLang || req.body.target_lang || req.query.target_lang || "Korean") as string;
+
+      const customGeminiKey = (req.body.geminiApiKey || req.query.geminiApiKey || req.body.gemini_key || req.query.gemini_key || req.headers["x-gemini-api-key"]) as string | undefined;
+      const customDeeplKey = (req.body.deeplApiKey || req.query.deeplApiKey || req.body.deepl_key || req.query.deepl_key || req.headers["x-deepl-api-key"]) as string | undefined;
 
       if (!text || typeof text !== "string" || !text.trim()) {
         if (isHtml) {
@@ -611,7 +623,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       // 1. Try to fetch DeepL translation if configured for lightning fast simple translation
       let deeplTranslation: string | null = null;
       let usedDeepL = false;
-      const deeplKey = getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
+      const deeplKey = (customDeeplKey && customDeeplKey.trim()) || getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
       const deeplLangCode = getDeepLLangCode(targetLang);
 
       if (deeplKey && deeplLangCode) {
@@ -662,9 +674,9 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       } else {
         // Fallback to simple Gemini translation if DeepL is not available or failed
         console.log(`[Fast Route] DeepL is not available or failed. Using fast Gemini translation into ${targetLang}...`);
-        const apiKey = getCleanEnv("GEMINI_API_KEY");
+        const apiKey = (customGeminiKey && customGeminiKey.trim()) || getCleanEnv("GEMINI_API_KEY");
         if (!apiKey) {
-          throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 브라우저 우측 상단 Settings 메뉴의 Secrets 패널에서 GEMINI_API_KEY를 등록해 주세요.");
+          throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 서비스 관리자의 GEMINI_API_KEY가 등록되어 있지 않거나 사용자의 개인 API Key가 입력되지 않았습니다. 앱 설정이나 우측 상단 Secrets 메뉴에서 등록해 주세요.");
         }
 
         const ai = new GoogleGenAI({

@@ -24,6 +24,62 @@ export default function MacShortcutGuide() {
 
   const appUrl = window.location.origin;
 
+  const [customGeminiKey, setCustomGeminiKey] = useState(() => {
+    try {
+      return localStorage.getItem("logos_custom_gemini_key") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [customDeeplKey, setCustomDeeplKey] = useState(() => {
+    try {
+      return localStorage.getItem("logos_custom_deepl_key") || "";
+    } catch {
+      return "";
+    }
+  });
+
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        setCustomGeminiKey(localStorage.getItem("logos_custom_gemini_key") || "");
+        setCustomDeeplKey(localStorage.getItem("logos_custom_deepl_key") || "");
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("logos_keys_updated", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("logos_keys_updated", handleStorageChange);
+    };
+  }, []);
+
+  const getShortcutUrl = () => {
+    let url = `${appUrl}/api/translate-text?html=true`;
+    if (customGeminiKey) {
+      url += `&gemini_key=${encodeURIComponent(customGeminiKey)}`;
+    }
+    if (customDeeplKey) {
+      url += `&deepl_key=${encodeURIComponent(customDeeplKey)}`;
+    }
+    url += `&text=`;
+    return url;
+  };
+
+  const getWebUrl = () => {
+    let url = `${appUrl}/?`;
+    if (customGeminiKey) {
+      url += `gemini_key=${encodeURIComponent(customGeminiKey)}&`;
+    }
+    if (customDeeplKey) {
+      url += `deepl_key=${encodeURIComponent(customDeeplKey)}&`;
+    }
+    url += `text=`;
+    return url;
+  };
+
   const nativeStepsEn = [
     {
       title: "1. Open macOS Shortcuts App",
@@ -233,15 +289,13 @@ export default function MacShortcutGuide() {
   const steps = activeTab === "native" ? nativeSteps : browserSteps;
 
   const handleCopyTextUrl = () => {
-    const shortcutTemplateUrl = `${appUrl}/api/translate-text?html=true&text=`;
-    navigator.clipboard.writeText(shortcutTemplateUrl);
+    navigator.clipboard.writeText(getShortcutUrl());
     setCopiedTextUrl(true);
     setTimeout(() => setCopiedTextUrl(false), 2000);
   };
 
   const handleCopyWebUrl = () => {
-    const shortcutTemplateUrl = `${appUrl}/?text=`;
-    navigator.clipboard.writeText(shortcutTemplateUrl);
+    navigator.clipboard.writeText(getWebUrl());
     setCopiedWebUrl(true);
     setTimeout(() => setCopiedWebUrl(false), 2000);
   };
@@ -526,7 +580,7 @@ export default function MacShortcutGuide() {
               </button>
             </div>
             <div className="font-mono mt-2.5 bg-white border border-amber-100 p-2 rounded text-[11px] break-all select-all text-stone-700 font-semibold shadow-inner">
-              {appUrl}/api/translate-text?html=true&text=
+              {getShortcutUrl()}
             </div>
           </div>
         ) : (
@@ -555,7 +609,7 @@ export default function MacShortcutGuide() {
               </button>
             </div>
             <div className="font-mono mt-2.5 bg-white border border-blue-100 p-2 rounded text-[11px] break-all select-all text-stone-700 font-semibold shadow-inner">
-              {appUrl}/?text=
+              {getWebUrl()}
             </div>
           </div>
         )}
