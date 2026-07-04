@@ -73,15 +73,15 @@ export default function App() {
       }
       setClientId(cid);
 
-      // Daily Token Usage loading
-      const storedUsageDate = localStorage.getItem("logos_token_usage_date") || "";
+      // Daily Translation Count loading
+      const storedUsageDate = localStorage.getItem("logos_translation_count_date") || "";
       const today = new Date().toISOString().split("T")[0];
       let storedUsageCount = 0;
       if (storedUsageDate === today) {
-        storedUsageCount = parseInt(localStorage.getItem("logos_token_usage_count") || "0", 10);
+        storedUsageCount = parseInt(localStorage.getItem("logos_translation_count") || "0", 10);
       } else {
-        localStorage.setItem("logos_token_usage_date", today);
-        localStorage.setItem("logos_token_usage_count", "0");
+        localStorage.setItem("logos_translation_count_date", today);
+        localStorage.setItem("logos_translation_count", "0");
       }
       setDailyTokenUsage({ used: storedUsageCount, limit: 50 });
     } catch (e) {
@@ -311,8 +311,8 @@ export default function App() {
           used: parsedData.tokenUsage.dailyTotal,
           limit: parsedData.tokenUsage.limit
         });
-        localStorage.setItem("logos_token_usage_count", String(parsedData.tokenUsage.dailyTotal));
-        localStorage.setItem("logos_token_usage_date", new Date().toISOString().split("T")[0]);
+        localStorage.setItem("logos_translation_count", String(parsedData.tokenUsage.dailyTotal));
+        localStorage.setItem("logos_translation_count_date", new Date().toISOString().split("T")[0]);
       }
     } catch (err: any) {
       console.error("Translation request failed:", err);
