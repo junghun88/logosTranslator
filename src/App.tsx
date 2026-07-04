@@ -55,6 +55,28 @@ export default function App() {
   const [clientId, setClientId] = useState("");
   const [dailyTokenUsage, setDailyTokenUsage] = useState({ used: 0, limit: 50 });
 
+  // Fetch real-time daily translation usage from the server
+  async function fetchRealtimeUsage(cidToUse?: string, geminiKeyToUse?: string) {
+    try {
+      const activeCid = cidToUse || clientId || localStorage.getItem("logos_client_id") || "";
+      const activeGeminiKey = geminiKeyToUse !== undefined ? geminiKeyToUse : (savedGeminiKey || localStorage.getItem("logos_custom_gemini_key") || "");
+      if (!activeCid) return;
+
+      const res = await fetch(`/api/usage?clientId=${encodeURIComponent(activeCid)}&geminiApiKey=${encodeURIComponent(activeGeminiKey)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDailyTokenUsage({
+          used: data.used,
+          limit: data.limit
+        });
+        localStorage.setItem("logos_translation_count", String(data.used));
+        localStorage.setItem("logos_translation_count_date", new Date().toISOString().split("T")[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch realtime usage count from server:", err);
+    }
+  }
+
   // Load saved keys, client ID and token usage on mount
   useEffect(() => {
     try {
@@ -84,10 +106,38 @@ export default function App() {
         localStorage.setItem("logos_translation_count", "0");
       }
       setDailyTokenUsage({ used: storedUsageCount, limit: 50 });
+
+      // Fetch fresh count immediately
+      if (cid) {
+        fetchRealtimeUsage(cid, gemini);
+      }
     } catch (e) {
       console.error("Failed to load saved API keys, clientId or token usage:", e);
     }
   }, []);
+
+  // Sync usage periodically or on tab focus
+  useEffect(() => {
+    if (clientId) {
+      fetchRealtimeUsage(clientId, savedGeminiKey);
+      
+      // Fetch every 15 seconds to keep in sync
+      const interval = setInterval(() => {
+        fetchRealtimeUsage(clientId, savedGeminiKey);
+      }, 15000);
+
+      // Fetch on window focus (e.g. user comes back from Mac shortcut popup)
+      const handleFocus = () => {
+        fetchRealtimeUsage(clientId, savedGeminiKey);
+      };
+      window.addEventListener("focus", handleFocus);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("focus", handleFocus);
+      };
+    }
+  }, [clientId, savedGeminiKey]);
 
   // Save personal API keys
   const handleSaveApiKeys = () => {

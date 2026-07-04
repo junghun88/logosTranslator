@@ -575,6 +575,33 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
     }
   });
 
+  // GET API route for retrieving the current request count for a client-id
+  app.get("/api/usage", (req, res) => {
+    try {
+      const clientId = req.query.clientId as string | undefined;
+      const customGeminiKey = req.query.geminiApiKey as string | undefined;
+      const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
+      
+      const key = (clientId && clientId.trim()) || req.ip || "unknown";
+      const today = getTodayString();
+      const record = requestStore[key];
+      
+      let currentUsage = 0;
+      if (record && record.date === today) {
+        currentUsage = record.count;
+      }
+      
+      res.json({
+        used: currentUsage,
+        limit: 50,
+        hasCustomKey
+      });
+    } catch (error) {
+      console.error("Usage API Error:", error);
+      res.status(500).json({ error: "Failed to retrieve usage" });
+    }
+  });
+
   // Dedicated API route that returns a beautifully pre-formatted Plain Text
   // perfect for macOS Shortcuts Quick Look / Popup without leaving Logos!
   const handleTranslateToText = async (req: express.Request, res: express.Response) => {
