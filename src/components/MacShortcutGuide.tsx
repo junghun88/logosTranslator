@@ -322,6 +322,11 @@ export default function MacShortcutGuide() {
     const targetUrl = isNative ? getShortcutUrl() : getWebUrl();
     const actionId = isNative ? "is.workflow.actions.showwebpage" : "is.workflow.actions.openurl";
     
+    // We escape & for XML compatibility
+    const escapedUrl = targetUrl.replace(/&/g, "&amp;");
+    // In plist dictionary keys, we use the original length of the unescaped URL
+    const urlLength = targetUrl.length;
+
     const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -334,23 +339,30 @@ export default function MacShortcutGuide() {
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>WFURLSpec</key>
-				<string>${targetUrl.replace(/&/g, "&amp;")}</string>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>attachmentsByRange</key>
+						<dict>
+							<key>{${urlLength}, 1}</key>
+							<dict>
+								<key>Type</key>
+								<string>ExtensionInput</string>
+							</dict>
+						</dict>
+						<key>string</key>
+						<string>${escapedUrl}\uFFFC</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenString</string>
+				</dict>
 			</dict>
 		</dict>
 		<dict>
 			<key>WFWorkflowActionIdentifier</key>
 			<string>${actionId}</string>
 			<key>WFWorkflowActionParameters</key>
-			<dict>
-				<key>WFInput</key>
-				<dict>
-					<key>Value</key>
-					<dict>
-						<key>Type</key>
-						<string>ExtensionInput</string>
-					</dict>
-				</dict>
-			</dict>
+			<dict/>
 		</dict>
 	</array>
 	<key>WFWorkflowClientVersion</key>
