@@ -170,14 +170,14 @@ export default function MacShortcutGuide() {
       icon: Compass,
       instructions: [
         "Spotlight(Cmd + Space)을 열어 '단축어' 혹은 'Shortcuts'를 검색해 실행합니다.",
-        "또는 아래의 'macOS Tahoe 단축어 다운로드' 버튼을 클릭하여 사용자 맞춤 주소와 키가 포함된 완성형 단축어를 받으세요!",
-        "수동 생성 시에는 우측 상단의 '+' 버튼을 눌러 새로운 단축어를 생성하고 이름을 'Logos Translator' 등으로 설정합니다."
+        "🔥 [강력 추천] 아래 검은색 'macOS Tahoe 전용 단축어 다운로드' 버튼을 클릭하면, 로고스 앱의 한계를 해결하기 위해 '자동 복사(Cmd+C) AppleScript 매크로'가 내장된 최신 완제품 단축어가 다운로드됩니다.",
+        "다운로드된 파일을 더블 클릭하여 설치하고, 아래 5단계의 단축키 설정만 추가하면 수동 설정 없이 즉시 드래그 번역이 완벽 작동합니다!"
       ],
       imageTip: "단축어 앱은 macOS Tahoe(타호, macOS 16) 환경에서 기본 제공되어 더욱 빠르고 쾌적한 연동 환경을 보장합니다."
     },
     {
       title: "2. 빠른 동작 설정 및 클립보드 예외 처리",
-      description: "로고스 본문 드래그 전달이 누락되었을 때를 대비해, 빠른 동작 메뉴 등록 및 클립보드 자동 가져오기(백업)를 설정합니다.",
+      description: "수동 생성 시, 로고스 본문 드래그 전달이 누락되었을 때를 대비해 빠른 동작 메뉴 등록 및 클립보드 자동 가져오기(백업)를 설정합니다.",
       icon: Settings,
       instructions: [
         "우측 설정 패널에서 'Shortcut Details' (슬라이더 조절 아이콘) 버튼을 누릅니다.",
@@ -186,11 +186,11 @@ export default function MacShortcutGuide() {
         "해당 줄 끝에 있는 '(입력이 없는 경우)' 또는 '(if there's no input)' 텍스트를 클릭합니다.",
         "드롭다운 목록에서 **[클립보드] (Clipboard)**를 예외(Fallback)로 설정해 줍니다!"
       ],
-      imageTip: "이렇게 하면 드래그 전송이 안 되더라도, 원하는 구절을 Cmd+C로 복사한 후 단축키만 누르면 즉시 번역됩니다."
+      imageTip: "다운로드형 단축어는 이 단계가 이미 스마트 매크로(AppleScript)로 완전 자동 구현되어 있어 생략 가능합니다."
     },
     {
       title: "3. URL 동작 블록 추가",
-      description: "macOS Tahoe 환경에 대응하는 초고속 실시간 번역 및 분석 카드를 생성해 줄 API 주소를 등록합니다.",
+      description: "수동 생성 시, macOS Tahoe 환경에 대응하는 초고속 실시간 번역 및 분석 카드를 생성해 줄 API 주소를 등록합니다.",
       icon: Cpu,
       instructions: [
         "우측의 동작 라이브러리 검색창에 'URL'을 검색해 편집창으로 드래그합니다.",
@@ -201,7 +201,7 @@ export default function MacShortcutGuide() {
     },
     {
       title: "4. 웹 페이지 표시 (팝업 창 연동)",
-      description: "로고스 성경 프로그램 위에 직접 복사 버튼이 포함된 팝업 카드가 뜨도록 설정합니다.",
+      description: "수동 생성 시, 로고스 성경 프로그램 위에 직접 복사 버튼이 포함된 팝업 카드가 뜨도록 설정합니다.",
       icon: Sparkles,
       instructions: [
         "🎯 [옵션 A: 웹 팝업 모드 - macOS Tahoe 매우 권장 ⭐️]",
@@ -225,7 +225,7 @@ export default function MacShortcutGuide() {
         "'키보드 단축키 추가' 버튼을 클릭한 뒤, 키보드에서 'Cmd + Option + Shift + T'를 동시에 누릅니다.",
         "단축어 편집창을 닫으면 모든 준비가 끝납니다!"
       ],
-      imageTip: "로고스 성경 앱에서 영어 구절을 마우스로 긁은 뒤 Cmd + Option + Shift + T를 누르시면 1초 만에 팝업 주해가 실행됩니다."
+      imageTip: "이제 로고스 앱에서 아무 본문이나 마우스로 드래그(선택)한 뒤 Cmd + Option + Shift + T를 누르기만 하면 자동 복사되어 1초 만에 플로팅 주해 창이 나타납니다."
     }
   ];
 
@@ -335,6 +335,26 @@ export default function MacShortcutGuide() {
 	<array>
 		<dict>
 			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.runapplescript</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFAppleScript</key>
+				<string>on run {input, parameters}
+	if input is not missing value and input as string is not &quot;&quot; then
+		return input
+	end if
+	tell application &quot;System Events&quot;
+		keystroke &quot;c&quot; using command down
+	end tell
+	delay 0.2
+	return the clipboard
+end run</string>
+			</dict>
+			<key>UUID</key>
+			<string>63F01C31-BC0C-4A2D-A537-83AF04C88214</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
 			<string>is.workflow.actions.url</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
@@ -346,8 +366,12 @@ export default function MacShortcutGuide() {
 						<dict>
 							<key>{${urlLength}, 1}</key>
 							<dict>
+								<key>OutputUUID</key>
+								<string>63F01C31-BC0C-4A2D-A537-83AF04C88214</string>
+								<key>OutputName</key>
+								<string>Script Result</string>
 								<key>Type</key>
-								<string>ExtensionInput</string>
+								<string>ActionOutput</string>
 							</dict>
 						</dict>
 						<key>string</key>

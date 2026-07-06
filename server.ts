@@ -616,6 +616,11 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
   // Dedicated API route that returns a beautifully pre-formatted Plain Text
   // perfect for macOS Shortcuts Quick Look / Popup without leaving Logos!
   const handleTranslateToText = async (req: express.Request, res: express.Response) => {
+    // Disable caching for this endpoint to prevent macOS Shortcuts/Safari from serving stale translation cards
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
     const isHtml = req.query.html === "true" || req.body.html === "true";
     try {
       const rawText = req.body.text || req.query.text;
@@ -739,7 +744,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
   </div>
 </body>
 </html>`;
-            return res.status(403).send(limitExceededHtml);
+            return res.status(200).send(limitExceededHtml);
           } else {
             res.setHeader("Content-Type", "text/plain; charset=utf-8");
             let lines: string[] = [];
@@ -759,7 +764,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
             lines.push("※ 키를 등록하면 단축키 링크에도 자동으로 안전하게 탑재되어");
             lines.push("   macOS Shortcuts에서 이전과 똑같이 중단 없이 작동합니다!");
             lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            return res.status(403).send(lines.join("\n"));
+            return res.status(200).send(lines.join("\n"));
           }
         }
       }
