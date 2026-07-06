@@ -282,13 +282,14 @@ export default function App() {
   }, [loading]);
 
   const handleTranslate = async (
-    textToTranslate: string = text,
+    textToTranslate: any = text,
     modeToUse: "balanced" | "scholarly" | "devotional" = mode,
     langToUse: string = targetLang,
     geminiKeyOverride?: string,
     deeplKeyOverride?: string
   ) => {
-    if (!textToTranslate.trim()) {
+    const safeText = typeof textToTranslate === "string" ? textToTranslate : String(textToTranslate || "");
+    if (!safeText.trim()) {
       setError("Please enter the text to be translated.");
       return;
     }
@@ -305,7 +306,7 @@ export default function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text: textToTranslate,
+          text: safeText,
           mode: modeToUse,
           targetLang: langToUse,
           geminiApiKey: geminiKeyOverride !== undefined ? geminiKeyOverride : savedGeminiKey,

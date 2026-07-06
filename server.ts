@@ -579,8 +579,12 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
   // GET API route for retrieving the current request count for a client-id
   app.get("/api/usage", (req, res) => {
     try {
-      const clientId = req.query.clientId as string | undefined;
-      const customGeminiKey = req.query.geminiApiKey as string | undefined;
+      const rawClientId = req.query.clientId || req.query.client_id;
+      const clientId = typeof rawClientId === "string" ? rawClientId : undefined;
+      
+      const rawGeminiKey = req.query.geminiApiKey || req.query.gemini_key;
+      const customGeminiKey = typeof rawGeminiKey === "string" ? rawGeminiKey : undefined;
+      
       const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
       
       const key = (clientId && clientId.trim()) || req.ip || "unknown";
@@ -614,18 +618,46 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
   const handleTranslateToText = async (req: express.Request, res: express.Response) => {
     const isHtml = req.query.html === "true" || req.body.html === "true";
     try {
-      const text = (req.body.text || req.query.text) as string;
-      const mode = (req.body.mode || req.query.mode || "balanced") as string;
-      const targetLang = (req.body.targetLang || req.query.targetLang || req.body.target_lang || req.query.target_lang || "Korean") as string;
+      const rawText = req.body.text || req.query.text;
+      let text = "";
+      if (Array.isArray(rawText)) {
+        text = rawText.map(item => typeof item === "string" ? item : JSON.stringify(item)).join("\n");
+      } else if (rawText && typeof rawText === "object") {
+        if ("value" in rawText && typeof rawText.value === "string") {
+          text = rawText.value;
+        } else if ("string" in rawText && typeof rawText.string === "string") {
+          text = rawText.string;
+        } else {
+          const keys = Object.keys(rawText);
+          if (keys.length === 0) {
+            text = "";
+          } else {
+            text = JSON.stringify(rawText);
+          }
+        }
+      } else if (rawText !== undefined && rawText !== null) {
+        text = String(rawText);
+      }
 
-      const customGeminiKey = (req.body.geminiApiKey || req.query.geminiApiKey || req.body.gemini_key || req.query.gemini_key || req.headers["x-gemini-api-key"]) as string | undefined;
-      const customDeeplKey = (req.body.deeplApiKey || req.query.deeplApiKey || req.body.deepl_key || req.query.deepl_key || req.headers["x-deepl-api-key"]) as string | undefined;
-      const clientId = (req.body.clientId || req.query.clientId || req.body.client_id || req.query.client_id) as string | undefined;
+      const rawMode = req.body.mode || req.query.mode;
+      const mode = (typeof rawMode === "string" ? rawMode : "balanced") as string;
+      
+      const rawTargetLang = req.body.targetLang || req.query.targetLang || req.body.target_lang || req.query.target_lang;
+      const targetLang = (typeof rawTargetLang === "string" ? rawTargetLang : "Korean") as string;
+
+      const rawGeminiKey = req.body.geminiApiKey || req.query.geminiApiKey || req.body.gemini_key || req.query.gemini_key || req.headers["x-gemini-api-key"];
+      const customGeminiKey = typeof rawGeminiKey === "string" ? rawGeminiKey : undefined;
+
+      const rawDeeplKey = req.body.deeplApiKey || req.query.deeplApiKey || req.body.deepl_key || req.query.deepl_key || req.headers["x-deepl-api-key"];
+      const customDeeplKey = typeof rawDeeplKey === "string" ? rawDeeplKey : undefined;
+
+      const rawClientId = req.body.clientId || req.query.clientId || req.body.client_id || req.query.client_id;
+      const clientId = typeof rawClientId === "string" ? rawClientId : undefined;
 
       const estimatedTokens = Math.ceil(text ? text.length * 1.5 + 300 : 0);
       const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
 
-      if (text && text.trim()) {
+      if (text && typeof text === "string" && text.trim()) {
         const limitCheck = checkRequestLimit(clientId, req.ip || "", hasCustomKey);
         if (!limitCheck.allowed) {
           if (isHtml) {
