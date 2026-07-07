@@ -249,7 +249,10 @@ export default function MacShortcutGuide() {
       description: "단축어가 클립보드를 제어하고 시스템 이벤트를 모방할 수 있도록 필수 권한을 1회 승인해 주어야 합니다. '사용할 수 없습니다' 오류가 뜰 때 반드시 체크하세요.",
       icon: AlertTriangle,
       instructions: [
-        "🎯 ['사용할 수 없습니다' 팝업 발생 시 조치법]",
+        "🎯 ['사용할 수 없습니다' 및 중복 팝업 100% 완전 해결법]",
+        "💡 [가장 확실한 해결책]: 기존 단축어를 삭제하시고 아래 다운로드 버튼을 통해 **최신 버전의 단축어 파일(.shortcut)**을 다시 설치해 주세요! 최신 버전은 '입력 없음(No Input)'으로 실행되어 macOS의 에러를 완전히 우회하며, 중복 실행 버그가 100% 해결되었습니다.",
+        "",
+        "수동 설정 또는 지속될 시 조치법:",
         "1. macOS [시스템 설정] -> [개인정보 보호 및 보안] -> [손쉬운 사용(Accessibility)] 메뉴로 이동합니다.",
         "2. 목록에서 '단축어(Shortcuts)'가 활성화(체크)되어 있는지 확인하고, 비활성화되어 있다면 켜 줍니다.",
         "3. macOS [시스템 설정] -> [개인정보 보호 및 보안] -> [자동화(Automation)] 메뉴로 이동합니다.",
@@ -435,12 +438,29 @@ end run</string>
 					<string>WFTextTokenString</string>
 				</dict>
 			</dict>
+			<key>UUID</key>
+			<string>A53783AF-04C8-4A2D-A537-83AF04C88215</string>
 		</dict>
 		<dict>
 			<key>WFWorkflowActionIdentifier</key>
 			<string>${actionId}</string>
 			<key>WFWorkflowActionParameters</key>
-			<dict/>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputUUID</key>
+						<string>A53783AF-04C8-4A2D-A537-83AF04C88215</string>
+						<key>OutputName</key>
+						<string>URL</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+			</dict>
 		</dict>
 	</array>
 	<key>WFWorkflowClientVersion</key>
