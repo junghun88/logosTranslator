@@ -446,9 +446,7 @@ end run</string>
 	<key>WFWorkflowClientVersion</key>
 	<string>1200</string>
 	<key>WFWorkflowInputContentItemClasses</key>
-	<array>
-		<string>WFStringContentItem</string>
-	</array>
+	<array/>
 	<key>WFWorkflowTypes</key>
 	<array>
 		<string>ActionExtension</string>
