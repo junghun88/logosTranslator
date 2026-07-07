@@ -160,6 +160,23 @@ export default function MacShortcutGuide() {
         "Close the Shortcuts editor—your setup is now complete!"
       ],
       imageTip: "Select any text in Logos and press Cmd + Option + Shift + T to see the translation in under a second."
+    },
+    {
+      title: "6. macOS Permissions & Troubleshooting ⚠️",
+      description: "You must grant the necessary permissions for the Shortcuts app to interact with the system pasteboard and control keyboard copy actions. Essential if you see 'Service Not Available' errors.",
+      icon: AlertTriangle,
+      instructions: [
+        "🎯 [Fixing 'Service Not Available' Popups]",
+        "1. Open macOS [System Settings] -> [Privacy & Security] -> [Accessibility].",
+        "2. Check if 'Shortcuts' is enabled in the list. If not, toggle it on to allow keyboard integration.",
+        "3. Open macOS [System Settings] -> [Privacy & Security] -> [Automation].",
+        "4. Find 'Shortcuts' and ensure that permission to control 'System Events' is enabled.",
+        "",
+        "📋 [Fixing 'Previous Clipboard Text Getting Translated' Issue]",
+        "1. When triggering the global hotkey (Cmd+Option+Shift+T), press and release it quickly.",
+        "2. If you hold the hotkey too long, macOS physically merges your Option and Shift modifiers with the automated Cmd+C, resulting in a different key combination that Logos ignores. A 0.3s delay is built into the script, so tapping and letting go immediately ensures 100% accurate drag-copy translation!"
+      ],
+      imageTip: "Security permissions are a one-time setup. Tapping the hotkey quickly solves any previous-text clipboard issues."
     }
   ];
 
@@ -226,6 +243,23 @@ export default function MacShortcutGuide() {
         "단축어 편집창을 닫으면 모든 준비가 끝납니다!"
       ],
       imageTip: "이제 로고스 앱에서 아무 본문이나 마우스로 드래그(선택)한 뒤 Cmd + Option + Shift + T를 누르기만 하면 자동 복사되어 1초 만에 플로팅 주해 창이 나타납니다."
+    },
+    {
+      title: "6. [중요] macOS 권한 승인 및 트러블슈팅 ⚠️",
+      description: "단축어가 클립보드를 제어하고 시스템 이벤트를 모방할 수 있도록 필수 권한을 1회 승인해 주어야 합니다. '사용할 수 없습니다' 오류가 뜰 때 반드시 체크하세요.",
+      icon: AlertTriangle,
+      instructions: [
+        "🎯 ['사용할 수 없습니다' 팝업 발생 시 조치법]",
+        "1. macOS [시스템 설정] -> [개인정보 보호 및 보안] -> [손쉬운 사용(Accessibility)] 메뉴로 이동합니다.",
+        "2. 목록에서 '단축어(Shortcuts)'가 활성화(체크)되어 있는지 확인하고, 비활성화되어 있다면 켜 줍니다.",
+        "3. macOS [시스템 설정] -> [개인정보 보호 및 보안] -> [자동화(Automation)] 메뉴로 이동합니다.",
+        "4. '단축어(Shortcuts)' 항목 아래 'System Events(시스템 이벤트)' 제어 권한이 활성화되어 있는지 확인해 주세요.",
+        "",
+        "📋 [이전 클립보드 텍스트가 번역되는 현상 조치법]",
+        "1. 전역 단축키(Cmd+Option+Shift+T)를 누를 때, 본문을 마우스 드래그한 직후에 단축키를 '살짝 끊어서 톡' 눌러주세요.",
+        "2. 단축키 키보드(특히 Option, Shift 키)를 계속해서 길게 꽉 누르고 계시면 macOS가 Cmd+C 복사 신호와 병합(Cmd+Option+Shift+C)하여 복사 매크로가 작동하지 않을 수 있습니다. 0.3초 대기 딜레이를 넣어두었으므로, 단축키를 누른 후 키보드에서 손을 바로 떼어주시면 100% 깔끔하게 복사됩니다!"
+      ],
+      imageTip: "보안 권한 승인은 최초 1회만 해주시면 되며, 복사 딜레이 매크로를 통해 이제 이전 클립보드가 아닌 드래그 본문이 번역됩니다."
     }
   ];
 
@@ -340,14 +374,34 @@ export default function MacShortcutGuide() {
 			<dict>
 				<key>WFAppleScript</key>
 				<string>on run {input, parameters}
-	if input is not missing value and input as string is not &quot;&quot; then
-		return input
+	set textInput to &quot;&quot;
+	try
+		if input is not missing value then
+			set textInput to input as string
+		end if
+	end try
+	
+	if textInput is &quot;&quot; then
+		delay 0.3
+		tell application &quot;System Events&quot;
+			keystroke &quot;c&quot; using command down
+		end tell
+		delay 0.2
+		try
+			set textInput to the clipboard as string
+		end try
 	end if
-	tell application &quot;System Events&quot;
-		keystroke &quot;c&quot; using command down
-	end tell
-	delay 0.2
-	return the clipboard
+	
+	if textInput is not &quot;&quot; then
+		try
+			set encodedText to do shell script &quot;echo -n &quot; &amp; quoted form of textInput &amp; &quot; | perl -0777 -pe 's/([^a-zA-Z0-9_.~-])/sprintf(qq(%%%02X), ord($1))/eg'&quot;
+			return encodedText
+		on error
+			return textInput
+		end try
+	end if
+	
+	return &quot;&quot;
 end run</string>
 			</dict>
 			<key>UUID</key>
