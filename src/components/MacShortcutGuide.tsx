@@ -450,18 +450,6 @@ export default function MacShortcutGuide() {
     diagramDesc3: {
       en: "Overlay",
       ko: "결과 화면",
-    },
-    downloadTitle: {
-      en: "Download Uploaded Shortcut File (.shortcut)",
-      ko: "업로드된 단축어 파일 다운로드 (.shortcut)",
-    },
-    downloadDesc: {
-      en: "Download the customized Apple Shortcut file (.shortcut) uploaded to the server to instantly install on macOS.",
-      ko: "서버에 업로드된 맞춤형 Apple 단축어 파일(.shortcut)을 다운로드하여 macOS에 간편하게 설치하세요.",
-    },
-    downloadBtn: {
-      en: "Download Shortcut File",
-      ko: "단축어 파일 다운로드",
     }
   };
 
@@ -478,31 +466,6 @@ export default function MacShortcutGuide() {
           <p className="text-sm text-stone-600 mt-1">
             {getLabel("desc")}
           </p>
-        </div>
-      </div>
-
-      {/* macOS Tahoe 1-Click Auto Installer Section */}
-      <div className="mb-6 p-5 bg-gradient-to-r from-stone-900 to-stone-800 text-white rounded-xl shadow-md border border-stone-700">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded-full">
-              <Sparkles className="w-3 h-3 text-stone-950" /> macOS Tahoe One-click Installer
-            </span>
-            <h4 className="font-serif text-base font-semibold text-stone-100 mt-1">
-              {uiLang === "ko" ? "맥용 단축어 파일 (.shortcut)" : "Apple Shortcut File (.shortcut)"}
-            </h4>
-            <p className="text-xs text-stone-300 leading-relaxed max-w-2xl">
-              {getLabel("downloadDesc")}
-            </p>
-          </div>
-          <a
-            href="/Logos_Translator.shortcut"
-            download="Logos_Translator.shortcut"
-            className="w-full md:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-stone-950 rounded-lg text-xs font-bold transition-all shadow flex items-center justify-center gap-2 shrink-0 border border-amber-600 cursor-pointer no-underline"
-          >
-            <Sparkles className="w-4 h-4 text-stone-950" />
-            <span>{getLabel("downloadBtn")}</span>
-          </a>
         </div>
       </div>
 
