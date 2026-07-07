@@ -99,13 +99,12 @@ export default function MacShortcutGuide() {
 
   const nativeStepsEn = [
     {
-      title: "1. Open macOS Shortcuts App (or Download Shortcut)",
-      description: "Launch the native macOS 'Shortcuts' app to design a new one-click translation automation, or download our ready-made file for macOS Tahoe.",
+      title: "1. Open macOS Shortcuts App & Create Shortcut",
+      description: "Launch the native macOS 'Shortcuts' app to design a new one-click translation automation.",
       icon: Compass,
       instructions: [
         "Open Spotlight (Cmd + Space), search for 'Shortcuts' and open it.",
-        "Alternatively, click the 'Download macOS Tahoe Shortcut' button below to get the pre-configured file with your personalized keys!",
-        "If setting up manually, click the '+' icon in the upper right corner to create a new shortcut and name it 'Logos Translator'."
+        "Click the '+' icon in the upper right corner to create a new shortcut and name it 'Logos Translator'."
       ],
       imageTip: "The Shortcuts app is pre-installed for free on macOS Tahoe (macOS 16) and later."
     },
@@ -182,13 +181,12 @@ export default function MacShortcutGuide() {
 
   const nativeStepsKo = [
     {
-      title: "1. macOS 단축어 앱 열기 (또는 단축어 즉시 다운로드)",
-      description: "클릭 한 번으로 고정밀 번역 및 주해 팝업을 연동하기 위해 macOS 기본 '단축어' 앱을 실행하거나, 아래에서 제공하는 완제품 단축어 파일을 다운로드해 가져옵니다.",
+      title: "1. macOS 단축어 앱 열기 및 새로운 단축어 생성",
+      description: "클릭 한 번으로 고정밀 번역 및 주해 팝업을 연동하기 위해 macOS 기본 '단축어' 앱을 실행하여 새로운 항목을 생성합니다.",
       icon: Compass,
       instructions: [
         "Spotlight(Cmd + Space)을 열어 '단축어' 혹은 'Shortcuts'를 검색해 실행합니다.",
-        "🔥 [강력 추천] 아래 검은색 'macOS Tahoe 전용 단축어 다운로드' 버튼을 클릭하면, 로고스 앱의 한계를 해결하기 위해 '자동 복사(Cmd+C) AppleScript 매크로'가 내장된 최신 완제품 단축어가 다운로드됩니다.",
-        "다운로드된 파일을 더블 클릭하여 설치하고, 아래 5단계의 단축키 설정만 추가하면 수동 설정 없이 즉시 드래그 번역이 완벽 작동합니다!"
+        "우측 상단의 '+' 아이콘을 클릭하여 새로운 단축어를 생성하고 이름을 '로고서번역' 혹은 'Logos Translator'로 지정합니다."
       ],
       imageTip: "단축어 앱은 macOS Tahoe(타호, macOS 16) 환경에서 기본 제공되어 더욱 빠르고 쾌적한 연동 환경을 보장합니다."
     },
@@ -203,7 +201,7 @@ export default function MacShortcutGuide() {
         "해당 줄 끝에 있는 '(입력이 없는 경우)' 또는 '(if there's no input)' 텍스트를 클릭합니다.",
         "드롭다운 목록에서 **[클립보드] (Clipboard)**를 예외(Fallback)로 설정해 줍니다!"
       ],
-      imageTip: "다운로드형 단축어는 이 단계가 이미 스마트 매크로(AppleScript)로 완전 자동 구현되어 있어 생략 가능합니다."
+      imageTip: "설정을 마치면 본문 드래그 전달이 불안정한 경우에도 완벽하게 대안(클립보드)을 추적합니다."
     },
     {
       title: "3. URL 동작 블록 추가",
@@ -249,10 +247,7 @@ export default function MacShortcutGuide() {
       description: "단축어가 클립보드를 제어하고 시스템 이벤트를 모방할 수 있도록 필수 권한을 1회 승인해 주어야 합니다. '사용할 수 없습니다' 오류가 뜰 때 반드시 체크하세요.",
       icon: AlertTriangle,
       instructions: [
-        "🎯 ['사용할 수 없습니다' 및 중복 팝업 100% 완전 해결법]",
-        "💡 [가장 확실한 해결책]: 기존 단축어를 삭제하시고 아래 다운로드 버튼을 통해 **최신 버전의 단축어 파일(.shortcut)**을 다시 설치해 주세요! 최신 버전은 '입력 없음(No Input)'으로 실행되어 macOS의 에러를 완전히 우회하며, 중복 실행 버그가 100% 해결되었습니다.",
-        "",
-        "수동 설정 또는 지속될 시 조치법:",
+        "🎯 ['사용할 수 없습니다' 및 중복 팝업 해결법]",
         "1. macOS [시스템 설정] -> [개인정보 보호 및 보안] -> [손쉬운 사용(Accessibility)] 메뉴로 이동합니다.",
         "2. 목록에서 '단축어(Shortcuts)'가 활성화(체크)되어 있는지 확인하고, 비활성화되어 있다면 켜 줍니다.",
         "3. macOS [시스템 설정] -> [개인정보 보호 및 보안] -> [자동화(Automation)] 메뉴로 이동합니다.",
@@ -354,139 +349,6 @@ export default function MacShortcutGuide() {
     setTimeout(() => setCopiedWebUrl(false), 2000);
   };
 
-  const handleDownloadShortcut = () => {
-    const isNative = activeTab === "native";
-    const targetUrl = isNative ? getShortcutUrl() : getWebUrl();
-    const actionId = isNative ? "is.workflow.actions.showwebpage" : "is.workflow.actions.openurl";
-    
-    // We escape & for XML compatibility
-    const escapedUrl = targetUrl.replace(/&/g, "&amp;");
-    // In plist dictionary keys, we use the original length of the unescaped URL
-    const urlLength = targetUrl.length;
-
-    const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>WFWorkflowActions</key>
-	<array>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>is.workflow.actions.runapplescript</string>
-			<key>WFWorkflowActionParameters</key>
-			<dict>
-				<key>WFAppleScript</key>
-				<string>on run {input, parameters}
-	set textInput to &quot;&quot;
-	try
-		if input is not missing value then
-			set textInput to input as string
-		end if
-	end try
-	
-	if textInput is &quot;&quot; then
-		delay 0.3
-		tell application &quot;System Events&quot;
-			keystroke &quot;c&quot; using command down
-		end tell
-		delay 0.2
-		try
-			set textInput to the clipboard as string
-		end try
-	end if
-	
-	if textInput is not &quot;&quot; then
-		try
-			set encodedText to do shell script &quot;echo -n &quot; &amp; quoted form of textInput &amp; &quot; | perl -0777 -pe 's/([^a-zA-Z0-9_.~-])/sprintf(qq(%%%02X), ord($1))/eg'&quot;
-			return encodedText
-		on error
-			return textInput
-		end try
-	end if
-	
-	return &quot;&quot;
-end run</string>
-			</dict>
-			<key>UUID</key>
-			<string>63F01C31-BC0C-4A2D-A537-83AF04C88214</string>
-		</dict>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>is.workflow.actions.url</string>
-			<key>WFWorkflowActionParameters</key>
-			<dict>
-				<key>WFURLSpec</key>
-				<dict>
-					<key>Value</key>
-					<dict>
-						<key>attachmentsByRange</key>
-						<dict>
-							<key>{${urlLength}, 1}</key>
-							<dict>
-								<key>OutputUUID</key>
-								<string>63F01C31-BC0C-4A2D-A537-83AF04C88214</string>
-								<key>OutputName</key>
-								<string>Script Result</string>
-								<key>Type</key>
-								<string>ActionOutput</string>
-							</dict>
-						</dict>
-						<key>string</key>
-						<string>${escapedUrl}\uFFFC</string>
-					</dict>
-					<key>WFSerializationType</key>
-					<string>WFTextTokenString</string>
-				</dict>
-			</dict>
-			<key>UUID</key>
-			<string>A53783AF-04C8-4A2D-A537-83AF04C88215</string>
-		</dict>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>${actionId}</string>
-			<key>WFWorkflowActionParameters</key>
-			<dict>
-				<key>WFInput</key>
-				<dict>
-					<key>Value</key>
-					<dict>
-						<key>OutputUUID</key>
-						<string>A53783AF-04C8-4A2D-A537-83AF04C88215</string>
-						<key>OutputName</key>
-						<string>URL</string>
-						<key>Type</key>
-						<string>ActionOutput</string>
-					</dict>
-					<key>WFSerializationType</key>
-					<string>WFTextTokenAttachment</string>
-				</dict>
-			</dict>
-		</dict>
-	</array>
-	<key>WFWorkflowClientVersion</key>
-	<string>1200</string>
-	<key>WFWorkflowInputContentItemClasses</key>
-	<array/>
-	<key>WFWorkflowTypes</key>
-	<array>
-		<string>ActionExtension</string>
-		<string>QuickAction</string>
-	</array>
-</dict>
-</plist>`;
-
-    const blob = new Blob([plistContent], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const filename = isNative ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut";
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const currentStepData = steps[activeStep] || steps[0];
   const StepIcon = currentStepData.icon;
 
@@ -504,14 +366,6 @@ end run</string>
     desc: {
       en: "Optimized for macOS Tahoe. Translate any selected English text in your Logos Bible app instantly by mapping a system-wide hotkey: Cmd + Option + Shift + T.",
       ko: "macOS Tahoe 버전에 완전 최적화 완료! 로고스 성경 인앱에서 단어를 드래그하고 전역 단축키 Cmd + Option + Shift + T를 누르면 초고속 AI 주해 카드가 나타납니다.",
-    },
-    downloadBtn: {
-      en: "Download macOS Tahoe Shortcut (.shortcut)",
-      ko: "macOS Tahoe 전용 단축어 다운로드 (.shortcut)",
-    },
-    downloadDesc: {
-      en: "This download contains your personalized API key and Client ID pre-configured! Double-click it to install instantly on macOS Tahoe.",
-      ko: "사용자의 개인 API 키 및 Client ID 설정이 미리 주입된 완제품 단축어 파일을 다운로드합니다. 복잡한 입력 없이 더블 클릭 한 번으로 자동 등록됩니다!",
     },
     tabNative: {
       en: "Method 1: Native Floating Popup (Highly Recommended - No Browser Needed)",
@@ -596,6 +450,18 @@ end run</string>
     diagramDesc3: {
       en: "Overlay",
       ko: "결과 화면",
+    },
+    downloadTitle: {
+      en: "Download Uploaded Shortcut File (.shortcut)",
+      ko: "업로드된 단축어 파일 다운로드 (.shortcut)",
+    },
+    downloadDesc: {
+      en: "Download the customized Apple Shortcut file (.shortcut) uploaded to the server to instantly install on macOS.",
+      ko: "서버에 업로드된 맞춤형 Apple 단축어 파일(.shortcut)을 다운로드하여 macOS에 간편하게 설치하세요.",
+    },
+    downloadBtn: {
+      en: "Download Shortcut File",
+      ko: "단축어 파일 다운로드",
     }
   };
 
@@ -620,98 +486,23 @@ end run</string>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded-full">
-              <Sparkles className="w-3 h-3" /> macOS Tahoe One-click Installer
+              <Sparkles className="w-3 h-3 text-stone-950" /> macOS Tahoe One-click Installer
             </span>
             <h4 className="font-serif text-base font-semibold text-stone-100 mt-1">
-              {uiLang === "ko" ? "macOS Tahoe 1초 자동 설치 단축어 파일 (.shortcut)" : "macOS Tahoe 1-Second Auto-Setup Shortcut File (.shortcut)"}
+              {uiLang === "ko" ? "맥용 단축어 파일 (.shortcut)" : "Apple Shortcut File (.shortcut)"}
             </h4>
             <p className="text-xs text-stone-300 leading-relaxed max-w-2xl">
               {getLabel("downloadDesc")}
             </p>
           </div>
-          <button
-            onClick={handleDownloadShortcut}
-            className="w-full md:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-stone-950 rounded-lg text-xs font-bold transition-all shadow flex items-center justify-center gap-2 shrink-0 border border-amber-600 cursor-pointer"
+          <a
+            href="/Logos_Translator.shortcut"
+            download="Logos_Translator.shortcut"
+            className="w-full md:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-stone-950 rounded-lg text-xs font-bold transition-all shadow flex items-center justify-center gap-2 shrink-0 border border-amber-600 cursor-pointer no-underline"
           >
             <Sparkles className="w-4 h-4 text-stone-950" />
             <span>{getLabel("downloadBtn")}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Troubleshooting/Security Policy Alert (Fixes "Unsigned Shortcuts Error") */}
-      <div className="mb-6 p-5 bg-amber-50/60 border border-amber-200 rounded-xl shadow-sm text-stone-800">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div className="space-y-3 flex-1">
-            <div>
-              <h4 className="font-serif text-sm font-semibold text-amber-900 flex items-center gap-1.5">
-                {uiLang === "ko" ? "💡 '서명되지 않은 단축어는 지원되지 않습니다' 오류 해결법" : "💡 Fix: 'Unsigned shortcut files are not supported' Error"}
-              </h4>
-              <p className="text-xs text-stone-600 leading-relaxed mt-1">
-                {uiLang === "ko" 
-                  ? "macOS의 강화된 보안 정책으로 인해, 웹 브라우저에서 수동 다운로드한 로컬 단축어(.shortcut) 파일의 더블클릭 설치가 차단될 수 있습니다. 아래의 초간단 방법으로 즉시 해결해 보세요:"
-                  : "Due to macOS security policies, downloaded local .shortcut files may be blocked from importing via double-click. Use one of these simple fixes:"}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              {/* Method A: Terminal Import */}
-              <div className="p-3 bg-white rounded-lg border border-stone-200 space-y-2 shadow-inner">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
-                  <Terminal className="w-4 h-4 text-stone-600" />
-                  <span>{uiLang === "ko" ? "방법 1: 터미널로 본인 서명 후 설치 (가장 확실함 ⭐️)" : "Fix 1: Sign Locally via Terminal & Open (Most Reliable ⭐️)"}</span>
-                </div>
-                <p className="text-[11px] text-stone-500 leading-normal">
-                  {uiLang === "ko" 
-                    ? "macOS 단축어 명령어 도구로 다운로드된 파일에 로컬 서명을 수동으로 각인한 후 실행하여 안전하게 단축어 앱에 등록합니다:"
-                    : "Use the macOS built-in shortcuts utility to apply a local signature to the file and open it for a secure installation:"}
-                </p>
-                <div className="flex items-center gap-1.5 bg-stone-50 p-1.5 rounded border border-stone-200">
-                  <span className="font-mono text-[10px] text-stone-700 select-all truncate flex-1">
-                    shortcuts sign -i ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup.shortcut" : "Logos_Tahoe_Translator_Browser.shortcut"} -o ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup_Signed.shortcut" : "Logos_Tahoe_Translator_Browser_Signed.shortcut"} && open ~/Downloads/{activeTab === "native" ? "Logos_Tahoe_Translator_Popup_Signed.shortcut" : "Logos_Tahoe_Translator_Browser_Signed.shortcut"}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const file = activeTab === "native" ? "Logos_Tahoe_Translator_Popup" : "Logos_Tahoe_Translator_Browser";
-                      const cmd = `shortcuts sign -i ~/Downloads/${file}.shortcut -o ~/Downloads/${file}_Signed.shortcut && open ~/Downloads/${file}_Signed.shortcut`;
-                      navigator.clipboard.writeText(cmd);
-                      setCopiedTerminal(true);
-                      setTimeout(() => setCopiedTerminal(false), 2000);
-                    }}
-                    className="p-1 hover:bg-stone-200 rounded text-stone-600 cursor-pointer transition-colors"
-                    title="Copy command"
-                  >
-                    {copiedTerminal ? (
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Method B: Preferences Toggle */}
-              <div className="p-3 bg-white rounded-lg border border-stone-200 space-y-2 shadow-inner">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
-                  <Settings className="w-4 h-4 text-stone-600" />
-                  <span>{uiLang === "ko" ? "방법 2: 설정에서 외부 스크립트 허용하기" : "Fix 2: Enable Untrusted Shortcuts"}</span>
-                </div>
-                <p className="text-[11px] text-stone-500 leading-normal">
-                  {uiLang === "ko" 
-                    ? "단축어 앱 실행 -> 상단 메뉴 '단축어 > 설정... (Cmd + ,)' -> '고급' 탭 -> '스크립트 실행 허용' 및 '신뢰할 수 없는 단축어 허용'에 체크합니다."
-                    : "Open Shortcuts app -> Click 'Shortcuts > Settings' -> Go to 'Advanced' tab -> Check 'Allow Running Scripts' and 'Allow Untrusted Shortcuts'."}
-                </p>
-                <div className="text-[10px] text-stone-400 italic">
-                  {uiLang === "ko" 
-                    ? "※ 또는 터미널에 defaults write com.apple.shortcuts SecurityAllowUntrusted -bool true 를 입력하세요."
-                    : "※ Or run: defaults write com.apple.shortcuts SecurityAllowUntrusted -bool true"}
-                </div>
-              </div>
-            </div>
-          </div>
+          </a>
         </div>
       </div>
 

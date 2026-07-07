@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>WFWorkflowActions</key>
+	<array>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.runapplescript</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFAppleScript</key>
+				<string>on run {input, parameters}
+	set textInput to ""
+	try
+		if input is not missing value then
+			set textInput to input as string
+		end if
+	end try
+	
+	if textInput is "" then
+		delay 0.3
+		tell application "System Events"
+			keystroke "c" using command down
+		end tell
+		delay 0.2
+		try
+			set textInput to the clipboard as string
+		end try
+	end if
+	
+	if textInput is not "" then
+		try
+			set encodedText to do shell script "echo -n " &amp; quoted form of textInput &amp; " | perl -0777 -pe 's/([^a-zA-Z0-9_.~-])/sprintf(qq(%%%02X), ord($1))/eg'"
+			return encodedText
+		on error
+			return textInput
+		end try
+	end if
+	
+	return ""
+end run</string>
+			</dict>
+			<key>UUID</key>
+			<string>63F01C31-BC0C-4A2D-A537-83AF04C88214</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.url</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFURLSpec</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>attachmentsByRange</key>
+						<dict>
+							<key>{116, 1}</key>
+							<dict>
+								<key>OutputUUID</key>
+								<string>63F01C31-BC0C-4A2D-A537-83AF04C88214</string>
+								<key>OutputName</key>
+								<string>Script Result</string>
+								<key>Type</key>
+								<string>ActionOutput</string>
+							</dict>
+						</dict>
+						<key>string</key>
+						<string>https://ais-pre-4boyyub52ff42htnvn6dtj-616816655993.asia-northeast1.run.app/api/translate-text?text=\uFFFC</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenString</string>
+				</dict>
+			</dict>
+			<key>UUID</key>
+			<string>A53783AF-04C8-4A2D-A537-83AF04C88215</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.showwebpage</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputUUID</key>
+						<string>A53783AF-04C8-4A2D-A537-83AF04C88215</string>
+						<key>OutputName</key>
+						<string>URL</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+			</dict>
+		</dict>
+	</array>
+	<key>WFWorkflowClientVersion</key>
+	<string>1200</string>
+	<key>WFWorkflowInputContentItemClasses</key>
+	<array/>
+	<key>WFWorkflowTypes</key>
+	<array>
+		<string>ActionExtension</string>
+		<string>QuickAction</string>
+	</array>
+</dict>
+</plist>
