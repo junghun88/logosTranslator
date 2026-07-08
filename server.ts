@@ -1013,6 +1013,24 @@ Text to translate:
         fallbackMessage = "⚠️ 개인 DeepL API Key가 등록되지 않았거나 번역이 실패하여, 기본 번역 서비스인 Gemini 엔진으로 자동 대체되었습니다. 개인 API 키는 웹 대시보드 우측 상단에서 등록할 수 있습니다.";
       }
 
+      // Pre-compile the links for engine switcher using all parameters to avoid losing state or breaking in WebView sandboxes
+      const allParams = new URLSearchParams();
+      allParams.set("html", "true");
+      if (text) allParams.set("text", text);
+      if (mode) allParams.set("mode", mode);
+      if (targetLang) allParams.set("targetLang", targetLang);
+      if (customGeminiKey) allParams.set("geminiApiKey", customGeminiKey);
+      if (customDeeplKey) allParams.set("deeplApiKey", customDeeplKey);
+      if (clientId) allParams.set("clientId", clientId);
+
+      const geminiParams = new URLSearchParams(allParams);
+      geminiParams.set("engine", "gemini");
+      const geminiUrl = `/api/translate-text?${geminiParams.toString()}`;
+
+      const deeplParams = new URLSearchParams(allParams);
+      deeplParams.set("engine", "deepl");
+      const deeplUrlPath = `/api/translate-text?${deeplParams.toString()}`;
+
       if (isHtml) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         const successHtml = `<!DOCTYPE html>
@@ -1076,6 +1094,51 @@ Text to translate:
       margin-top: 16px;
       margin-bottom: 6px;
       font-weight: 600;
+    }
+    .engine-switcher {
+      display: flex;
+      background-color: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .engine-tab {
+      flex: 1;
+      text-align: center;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #78716c;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .engine-tab:hover {
+      color: #44403c;
+    }
+    .engine-tab.active {
+      background-color: #ffffff;
+      color: #1c1917;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+      border: 1px solid #d6d3d1;
+    }
+    .fallback-banner {
+      font-size: 10.5px;
+      color: #b45309;
+      background-color: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      line-height: 1.5;
     }
     .text-box {
       background-color: #fafaf9;
@@ -1159,47 +1222,6 @@ Text to translate:
     .toast.show {
       transform: translateX(-50%) translateY(0);
     }
-    .engine-switcher {
-      display: flex;
-      background-color: #fafaf9;
-      border: 1px solid #e7e5e4;
-      border-radius: 8px;
-      padding: 3px;
-      margin-bottom: 16px;
-      gap: 4px;
-    }
-    .engine-tab {
-      flex: 1;
-      text-align: center;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: #78716c;
-      transition: all 0.2s ease;
-    }
-    .engine-tab:hover {
-      color: #44403c;
-    }
-    .engine-tab.active {
-      background-color: #ffffff;
-      color: #1c1917;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
-      border: 1px solid #d6d3d1;
-    }
-    .fallback-banner {
-      font-size: 10.5px;
-      color: #b45309;
-      background-color: #fef3c7;
-      border: 1px solid #fde68a;
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
   </style>
 </head>
 <body>
@@ -1212,12 +1234,12 @@ Text to translate:
     </div>
 
     <div class="engine-switcher">
-      <button class="engine-tab ${engine === 'gemini' ? 'active' : ''}" onclick="switchEngine('gemini')">
+      <a class="engine-tab ${engine === 'gemini' ? 'active' : ''}" href="${geminiUrl}">
         Gemini (기본 권장)
-      </button>
-      <button class="engine-tab ${engine === 'deepl' ? 'active' : ''}" onclick="switchEngine('deepl')">
+      </a>
+      <a class="engine-tab ${engine === 'deepl' ? 'active' : ''}" href="${deeplUrlPath}">
         DeepL (고정밀 선택)
-      </button>
+      </a>
     </div>
 
     ${fallbackMessage ? `<div class="fallback-banner">${escapeHtml(fallbackMessage)}</div>` : ""}
@@ -1250,12 +1272,6 @@ Text to translate:
   <div id="toast" class="toast">복사 완료!</div>
 
   <script>
-    function switchEngine(newEngine) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('engine', newEngine);
-      window.location.href = url.toString();
-    }
-
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.innerText = msg;
