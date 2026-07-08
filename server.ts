@@ -1068,8 +1068,8 @@ Text to translate:
       border-radius: 12px;
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       width: 100%;
-      max-width: 520px;
-      padding: 24px;
+      max-width: 720px;
+      padding: 32px;
       box-sizing: border-box;
     }
     .header {
@@ -1077,32 +1077,32 @@ Text to translate:
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid #e7e5e4;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
+      padding-bottom: 14px;
+      margin-bottom: 20px;
     }
     .title {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       color: #44403c;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
     .subtitle {
-      font-size: 10px;
+      font-size: 11px;
       background-color: #f5f5f4;
       color: #78716c;
-      padding: 2px 6px;
+      padding: 3px 8px;
       border-radius: 4px;
       font-family: monospace;
     }
     .section-title {
-      font-size: 11px;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #78716c;
-      margin-top: 16px;
-      margin-bottom: 6px;
+      margin-top: 20px;
+      margin-bottom: 8px;
       font-weight: 600;
     }
     .engine-switcher {
@@ -1110,15 +1110,15 @@ Text to translate:
       background-color: #fafaf9;
       border: 1px solid #e7e5e4;
       border-radius: 8px;
-      padding: 3px;
-      margin-bottom: 16px;
-      gap: 4px;
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 6px;
     }
     .engine-tab {
       flex: 1;
       text-align: center;
-      padding: 6px 12px;
-      font-size: 11px;
+      padding: 8px 16px;
+      font-size: 12px;
       font-weight: 600;
       border-radius: 6px;
       cursor: pointer;
@@ -1141,24 +1141,25 @@ Text to translate:
       border: 1px solid #d6d3d1;
     }
     .fallback-banner {
-      font-size: 10.5px;
+      font-size: 11px;
       color: #b45309;
       background-color: #fef3c7;
       border: 1px solid #fde68a;
       border-radius: 6px;
-      padding: 8px 12px;
-      margin-bottom: 12px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
       line-height: 1.5;
     }
     .text-box {
       background-color: #fafaf9;
       border: 1px solid #f5f5f4;
       border-radius: 8px;
-      padding: 12px;
-      font-size: 13.5px;
-      line-height: 1.6;
+      padding: 18px;
+      font-size: 14.5px;
+      line-height: 1.65;
       white-space: pre-wrap;
       word-break: break-word;
+      min-height: 120px;
     }
     .original {
       color: #57534e;
@@ -1172,17 +1173,17 @@ Text to translate:
     }
     .button-group {
       display: flex;
-      gap: 8px;
-      margin-top: 20px;
+      gap: 10px;
+      margin-top: 24px;
     }
     .btn {
       flex: 1;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 10px 14px;
-      font-size: 12px;
+      gap: 8px;
+      padding: 12px 18px;
+      font-size: 13px;
       font-weight: 600;
       border-radius: 8px;
       border: none;
