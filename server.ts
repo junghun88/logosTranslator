@@ -993,7 +993,11 @@ Text to translate:
           {
             model: "gemini-3.5-flash",
             contents: fastPrompt,
-            config: {}
+            config: {
+              thinkingConfig: {
+                thinkingLevel: "MINIMAL"
+              }
+            }
           },
           15000,
           "구글 Gemini API 응답 지연"
@@ -1023,13 +1027,18 @@ Text to translate:
       if (customDeeplKey) allParams.set("deeplApiKey", customDeeplKey);
       if (clientId) allParams.set("clientId", clientId);
 
+      // Generate fully absolute URLs for the switcher links to avoid relative path resolution bugs in sandboxed macOS Shortcuts WebViews
+      const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+      const host = req.get("host") || "localhost:3000";
+      const baseUrl = `${protocol}://${host}/api/translate-text`;
+
       const geminiParams = new URLSearchParams(allParams);
       geminiParams.set("engine", "gemini");
-      const geminiUrl = `/api/translate-text?${geminiParams.toString()}`;
+      const geminiUrl = `${baseUrl}?${geminiParams.toString()}`;
 
       const deeplParams = new URLSearchParams(allParams);
       deeplParams.set("engine", "deepl");
-      const deeplUrlPath = `/api/translate-text?${deeplParams.toString()}`;
+      const deeplUrlPath = `${baseUrl}?${deeplParams.toString()}`;
 
       if (isHtml) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -1053,6 +1062,7 @@ Text to translate:
       box-sizing: border-box;
     }
     .card {
+      position: relative;
       background-color: #ffffff;
       border: 1px solid #e7e5e4;
       border-radius: 12px;
@@ -1216,6 +1226,142 @@ Text to translate:
       border-radius: 20px;
       box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
       transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.85);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      border-radius: 12px;
+    }
+    .loading-overlay.active {
+      display: flex;
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e7e5e4;
+      border-top: 3px solid #1c1917;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .loading-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #44403c;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">번역 서비스 전환 중 (Loading)...</div>
+    </div>
+
+    <div class="header">
+      <div class="title">
+        <span>📖</span> LOGOS TRANSLATION COMPANION
+      </div>
+      <div class="subtitle">FAST MODE</div>
+    </div>
+
+    <div class="engine-switcher">
+      <a class="engine-tab ${engine === 'gemini' ? 'active' : ''}" href="${geminiUrl}" onclick="switchEngine(event, '${geminiUrl}')">
+        Gemini (기본 권장)
+      </a>
+      <a class="engine-tab ${engine === 'deepl' ? 'active' : ''}" href="${deeplUrlPath}" onclick="switchEngine(event, '${deeplUrlPath}')">
+        DeepL (고정밀 선택)
+      </a>
+    </div>
+
+    ${fallbackMessage ? `<div class="fallback-banner">${escapeHtml(fallbackMessage)}</div>` : ""}
+
+    <div class="section-title">Logos English Original</div>
+    <div class="text-box original" id="originalText">${escapeHtml(text)}</div>
+
+    <div class="section-title">${escapeHtml(engineName)}</div>
+    <div class="text-box translation" id="translationText">${escapeHtml(translationResult)}</div>
+
+    <div class="button-group">
+      <button class="btn btn-primary" onclick="copyTranslation()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        번역 텍스트 복사 (Copy)
+      </button>
+      <button class="btn btn-secondary" onclick="copyAll()">
+        원문+번역 복사
+      </button>
+      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">닫기 (Close)</button>
+    </div>
+
+    <div class="footer" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center;">
+      <div>⚡️ Running in high-speed popup mode via system shortcut.</div>
+      <div style="font-size: 10px; color: #78716c; font-weight: 500; background-color: #f5f5f4; padding: 2px 8px; border-radius: 12px; border: 1px solid #e7e5e4; margin-top: 4px; display: inline-block;">
+        ${hasCustomKey ? "✨ 한도 없음 (개인 API 키 적용 중)" : `📊 오늘 무료 번역: ${finalDailyTotal} / 50 회`}
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">복사 완료!</div>
+
+  <script>
+    function switchEngine(event, url) {
+      if (event) event.preventDefault();
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) {
+        overlay.classList.add('active');
+      }
+      setTimeout(() => {
+        window.location.href = url;
+      }, 50);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    function copyTranslation() {
+      const text = document.getElementById('translationText').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('번역 텍스트가 클립보드에 복사되었습니다!');
+      }).catch(err => {
+        alert('복사 실패: ' + err);
+      });
+    }
+
+    function copyAll() {
+      const orig = document.getElementById('originalText').innerText;
+      const trans = document.getElementById('translationText').innerText;
+      const fullText = "[ Logos English Original ]\n" + orig + "\n\n[ ${engineName} ]\n" + trans;
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast('전체 카드가 클립보드에 복사되었습니다!');
+      }).catch(err => {
+        alert('복사 실패: ' + err);
+      });
+    }
+  </script>s cubic-bezier(0.16, 1, 0.3, 1);
       z-index: 999;
       pointer-events: none;
     }
