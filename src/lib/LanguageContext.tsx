@@ -400,16 +400,16 @@ const dictionary: Record<string, Record<UiLang, string>> = {
     ko: "번역 서비스 선택",
   },
   engineDeeplLabel: {
-    en: "DeepL (Default / High Precision)",
-    ko: "DeepL (기본 / 고정밀 직역)",
+    en: "DeepL (Optional / High Precision)",
+    ko: "DeepL (고정밀 선택사항)",
   },
   engineGeminiLabel: {
-    en: "Gemini (Simple Text Translation)",
-    ko: "Gemini (제미나이 단순 번역)",
+    en: "Gemini (Default / Recommended)",
+    ko: "Gemini (기본 권장)",
   },
   translationEngineDesc: {
-    en: "Choose the primary translation service for direct literal translation comparison.",
-    ko: "영어에서 다른 언어로 직역할 때 사용할 주 엔진을 선택합니다.",
+    en: "Choose the primary translation service for direct literal translation comparison. DeepL provides high precision if configured with an API key.",
+    ko: "영어에서 다른 언어로 직역할 때 사용할 주 엔진을 선택합니다. DeepL은 키를 등록했을 때 고정밀 번역을 제공합니다.",
   }
 };
 

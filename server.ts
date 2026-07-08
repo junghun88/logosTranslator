@@ -232,7 +232,7 @@ async function startServer() {
     targetLang: string = "Korean",
     customGeminiKey?: string,
     customDeeplKey?: string,
-    translationEngine: string = "deepl"
+    translationEngine: string = "gemini"
   ) {
     console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}, Target Language: ${targetLang}, Engine: ${translationEngine}`);
     
@@ -525,7 +525,7 @@ You are performing a simple, direct, and straightforward language translation. F
         targetLang || "Korean", 
         customGeminiKey, 
         customDeeplKey,
-        translationEngine || "deepl"
+        translationEngine || "gemini"
       );
       
       commitRequest(clientId, req.ip || "");
@@ -674,7 +674,7 @@ You are performing a simple, direct, and straightforward language translation. F
       const clientId = typeof rawClientId === "string" ? rawClientId : undefined;
 
       const rawEngine = req.body.engine || req.query.engine;
-      const engine = typeof rawEngine === "string" ? rawEngine : "deepl";
+      const engine = typeof rawEngine === "string" ? rawEngine : "gemini";
 
       const estimatedTokens = Math.ceil(text ? text.length * 1.5 + 300 : 0);
       const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
@@ -1008,6 +1008,11 @@ Text to translate:
       const finalKey = (clientId && clientId.trim()) || req.ip || "unknown";
       const finalDailyTotal = requestStore[finalKey]?.count || 0;
 
+      let fallbackMessage = "";
+      if (engine === "deepl" && !usedDeepL) {
+        fallbackMessage = "⚠️ 개인 DeepL API Key가 등록되지 않았거나 번역이 실패하여, 기본 번역 서비스인 Gemini 엔진으로 자동 대체되었습니다. 개인 API 키는 웹 대시보드 우측 상단에서 등록할 수 있습니다.";
+      }
+
       if (isHtml) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         const successHtml = `<!DOCTYPE html>
@@ -1154,6 +1159,47 @@ Text to translate:
     .toast.show {
       transform: translateX(-50%) translateY(0);
     }
+    .engine-switcher {
+      display: flex;
+      background-color: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .engine-tab {
+      flex: 1;
+      text-align: center;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #78716c;
+      transition: all 0.2s ease;
+    }
+    .engine-tab:hover {
+      color: #44403c;
+    }
+    .engine-tab.active {
+      background-color: #ffffff;
+      color: #1c1917;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+      border: 1px solid #d6d3d1;
+    }
+    .fallback-banner {
+      font-size: 10.5px;
+      color: #b45309;
+      background-color: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -1164,6 +1210,17 @@ Text to translate:
       </div>
       <div class="subtitle">FAST MODE</div>
     </div>
+
+    <div class="engine-switcher">
+      <button class="engine-tab ${engine === 'gemini' ? 'active' : ''}" onclick="switchEngine('gemini')">
+        Gemini (기본 권장)
+      </button>
+      <button class="engine-tab ${engine === 'deepl' ? 'active' : ''}" onclick="switchEngine('deepl')">
+        DeepL (고정밀 선택)
+      </button>
+    </div>
+
+    ${fallbackMessage ? `<div class="fallback-banner">${escapeHtml(fallbackMessage)}</div>` : ""}
 
     <div class="section-title">Logos English Original</div>
     <div class="text-box original" id="originalText">${escapeHtml(text)}</div>
@@ -1193,6 +1250,12 @@ Text to translate:
   <div id="toast" class="toast">복사 완료!</div>
 
   <script>
+    function switchEngine(newEngine) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('engine', newEngine);
+      window.location.href = url.toString();
+    }
+
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.innerText = msg;

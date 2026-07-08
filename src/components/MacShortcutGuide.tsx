@@ -50,9 +50,9 @@ export default function MacShortcutGuide() {
   });
   const [translationEngine, setTranslationEngine] = useState(() => {
     try {
-      return localStorage.getItem("logos_translation_engine") || "deepl";
+      return localStorage.getItem("logos_translation_engine") || "gemini";
     } catch {
-      return "deepl";
+      return "gemini";
     }
   });
 
@@ -62,7 +62,7 @@ export default function MacShortcutGuide() {
         setCustomGeminiKey(localStorage.getItem("logos_custom_gemini_key") || "");
         setCustomDeeplKey(localStorage.getItem("logos_custom_deepl_key") || "");
         setClientId(localStorage.getItem("logos_client_id") || "");
-        setTranslationEngine(localStorage.getItem("logos_translation_engine") || "deepl");
+        setTranslationEngine(localStorage.getItem("logos_translation_engine") || "gemini");
       } catch (e) {
         console.error(e);
       }

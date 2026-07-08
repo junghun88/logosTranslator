@@ -45,9 +45,9 @@ export default function App() {
   const [translationEngine, setTranslationEngine] = useState<"deepl" | "gemini">(() => {
     try {
       const saved = localStorage.getItem("logos_translation_engine");
-      return saved === "deepl" || saved === "gemini" ? saved : "deepl";
+      return saved === "deepl" || saved === "gemini" ? saved : "gemini";
     } catch {
-      return "deepl";
+      return "gemini";
     }
   });
 
@@ -895,19 +895,6 @@ export default function App() {
                 </label>
                 <div className="grid grid-cols-2 gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-lg">
                   <button
-                    onClick={() => handleSelectEngine("deepl")}
-                    className={`py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center transition-all ${
-                      translationEngine === "deepl"
-                        ? "bg-white text-stone-900 border border-stone-300 shadow-xs"
-                        : "text-stone-500 hover:text-stone-800"
-                    }`}
-                  >
-                    <span>DeepL</span>
-                    <span className="text-[9px] font-normal opacity-60 font-serif italic mt-0.5">
-                      {uiLang === "ko" ? "기본 권장" : "Default"}
-                    </span>
-                  </button>
-                  <button
                     onClick={() => handleSelectEngine("gemini")}
                     className={`py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center transition-all ${
                       translationEngine === "gemini"
@@ -917,7 +904,20 @@ export default function App() {
                   >
                     <span>Gemini</span>
                     <span className="text-[9px] font-normal opacity-60 font-serif italic mt-0.5">
-                      {uiLang === "ko" ? "단순 번역" : "Simple"}
+                      {uiLang === "ko" ? "기본 권장" : "Default"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleSelectEngine("deepl")}
+                    className={`py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center transition-all ${
+                      translationEngine === "deepl"
+                        ? "bg-white text-stone-900 border border-stone-300 shadow-xs"
+                        : "text-stone-500 hover:text-stone-800"
+                    }`}
+                  >
+                    <span>DeepL</span>
+                    <span className="text-[9px] font-normal opacity-60 font-serif italic mt-0.5">
+                      {uiLang === "ko" ? "고정밀 선택" : "High Precision"}
                     </span>
                   </button>
                 </div>
