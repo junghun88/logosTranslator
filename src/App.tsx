@@ -41,6 +41,26 @@ export default function App() {
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
+  // Translation Engine State
+  const [translationEngine, setTranslationEngine] = useState<"deepl" | "gemini">(() => {
+    try {
+      const saved = localStorage.getItem("logos_translation_engine");
+      return saved === "deepl" || saved === "gemini" ? saved : "deepl";
+    } catch {
+      return "deepl";
+    }
+  });
+
+  const handleSelectEngine = (engine: "deepl" | "gemini") => {
+    setTranslationEngine(engine);
+    try {
+      localStorage.setItem("logos_translation_engine", engine);
+      window.dispatchEvent(new Event("logos_keys_updated"));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Custom API Keys State
   const [savedGeminiKey, setSavedGeminiKey] = useState("");
   const [savedDeeplKey, setSavedDeeplKey] = useState("");
@@ -216,9 +236,19 @@ export default function App() {
     const targetLangParam = params.get("targetLang") || params.get("target_lang") || params.get("lang");
     const geminiKeyParam = params.get("gemini_key") || params.get("geminiApiKey");
     const deeplKeyParam = params.get("deepl_key") || params.get("deeplApiKey");
+    const engineParam = params.get("engine");
 
     let activeGeminiKey = localStorage.getItem("logos_custom_gemini_key") || "";
     let activeDeeplKey = localStorage.getItem("logos_custom_deepl_key") || "";
+
+    if (engineParam === "deepl" || engineParam === "gemini") {
+      setTranslationEngine(engineParam);
+      try {
+        localStorage.setItem("logos_translation_engine", engineParam);
+      } catch (e) {
+        console.error(e);
+      }
+    }
 
     if (geminiKeyParam) {
       localStorage.setItem("logos_custom_gemini_key", geminiKeyParam);
@@ -311,7 +341,8 @@ export default function App() {
           targetLang: langToUse,
           geminiApiKey: geminiKeyOverride !== undefined ? geminiKeyOverride : savedGeminiKey,
           deeplApiKey: deeplKeyOverride !== undefined ? deeplKeyOverride : savedDeeplKey,
-          clientId: clientId
+          clientId: clientId,
+          translationEngine: translationEngine
         })
       });
 
@@ -402,6 +433,7 @@ export default function App() {
         translation: result.translation,
         mode,
         targetLang,
+        translationEngine,
         result
       };
       const updated = [newItem, ...history];
@@ -415,6 +447,9 @@ export default function App() {
     setText(item.originalText);
     setMode(item.mode);
     setTargetLang(item.targetLang || "Korean");
+    if (item.translationEngine) {
+      setTranslationEngine(item.translationEngine);
+    }
     setActiveHistoryId(item.id);
   };
 
@@ -848,6 +883,56 @@ export default function App() {
                     <ChevronDown className="w-3.5 h-3.5" />
                   </div>
                 </div>
+              </div>
+
+              {/* Translation Engine / Service Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-serif font-bold text-stone-600 block flex items-center justify-between">
+                  <span>{t("translationEngineLabel")}</span>
+                  <span className="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-serif font-semibold">
+                    Engine Option
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-lg">
+                  <button
+                    onClick={() => handleSelectEngine("deepl")}
+                    className={`py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center transition-all ${
+                      translationEngine === "deepl"
+                        ? "bg-white text-stone-900 border border-stone-300 shadow-xs"
+                        : "text-stone-500 hover:text-stone-800"
+                    }`}
+                  >
+                    <span>DeepL</span>
+                    <span className="text-[9px] font-normal opacity-60 font-serif italic mt-0.5">
+                      {uiLang === "ko" ? "기본 권장" : "Default"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleSelectEngine("gemini")}
+                    className={`py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center transition-all ${
+                      translationEngine === "gemini"
+                        ? "bg-white text-stone-900 border border-stone-300 shadow-xs"
+                        : "text-stone-500 hover:text-stone-800"
+                    }`}
+                  >
+                    <span>Gemini</span>
+                    <span className="text-[9px] font-normal opacity-60 font-serif italic mt-0.5">
+                      {uiLang === "ko" ? "단순 번역" : "Simple"}
+                    </span>
+                  </button>
+                </div>
+                {translationEngine === "deepl" && !savedDeeplKey && (
+                  <p className="text-[10px] text-amber-700 bg-amber-50/70 border border-amber-100 rounded px-2.5 py-1.5 leading-relaxed mt-1">
+                    {uiLang === "ko" 
+                      ? "⚠️ 개인 DeepL API Key가 등록되지 않았습니다. API 키를 설정하지 않을 경우, 자동으로 Gemini 단순 번역 엔진이 한글 역본으로 적용됩니다."
+                      : "⚠️ Personal DeepL API key is not configured. Gemini simple translation will be used as fallback."}
+                  </p>
+                )}
+                {translationEngine === "gemini" && (
+                  <p className="text-[10px] text-stone-500 leading-normal pl-0.5">
+                    {t("translationEngineDesc")}
+                  </p>
+                )}
               </div>
 
               {/* Action Button */}

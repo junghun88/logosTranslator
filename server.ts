@@ -231,9 +231,10 @@ async function startServer() {
     mode: string = "balanced", 
     targetLang: string = "Korean",
     customGeminiKey?: string,
-    customDeeplKey?: string
+    customDeeplKey?: string,
+    translationEngine: string = "deepl"
   ) {
-    console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}, Target Language: ${targetLang}`);
+    console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}, Target Language: ${targetLang}, Engine: ${translationEngine}`);
     
     const apiKey = (customGeminiKey && customGeminiKey.trim()) || getCleanEnv("GEMINI_API_KEY");
     if (!apiKey) {
@@ -241,10 +242,11 @@ async function startServer() {
       throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 서비스 관리자의 GEMINI_API_KEY가 등록되어 있지 않거나 사용자의 개인 API Key가 입력되지 않았습니다. 앱 설정이나 우측 상단 Secrets 메뉴에서 등록해 주세요.");
     }
 
-    // Check and invoke DeepL if key is configured (support both DEEPL_API_KEY and DEEP_API_KEY)
+    // Check and invoke DeepL if key is configured (support both DEEPL_API_KEY and DEEP_API_KEY) and engine is 'deepl'
     let deeplTranslation: string | null = null;
     let deeplError: string | null = null;
-    const deeplKey = (customDeeplKey && customDeeplKey.trim()) || getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
+    const isDeeplRequested = (translationEngine === "deepl");
+    const deeplKey = isDeeplRequested ? ((customDeeplKey && customDeeplKey.trim()) || getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY")) : null;
     const deeplLangCode = getDeepLLangCode(targetLang);
 
     if (deeplKey && deeplLangCode) {
@@ -326,6 +328,11 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       systemInstruction += `\nFocus on warm, pastoral, devotional application, clear and accessible ${targetLang} translation, and practical spiritual insights, written entirely in ${targetLang}.`;
     } else {
       systemInstruction += `\nFocus on a balanced, precise literary translation and clear structural side-by-side parsing, written entirely in ${targetLang}.`;
+    }
+
+    if (translationEngine === "gemini") {
+      systemInstruction += `\n\n[CRITICAL INSTRUCTION FOR SIMPLE TRANSLATION]: 
+You are performing a simple, direct, and straightforward language translation. Focus on delivering a clear, modern, and highly natural translation in the 'translation' field, avoiding overly complex or heavy academic theological jargon. Keep vocabulary analysis and insights accessible, clear, and direct.`;
     }
 
     let prompt = `Please translate and analyze the following text:
@@ -496,7 +503,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
   // API route for translation and theological analysis (JSON Response)
   app.post("/api/translate", async (req, res) => {
     try {
-      const { text, mode, targetLang, geminiApiKey, deeplApiKey, clientId } = req.body;
+      const { text, mode, targetLang, geminiApiKey, deeplApiKey, clientId, translationEngine } = req.body;
       if (!text || typeof text !== "string") {
         return res.status(400).json({ error: "Text is required" });
       }
@@ -512,7 +519,14 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
         return res.status(403).json({ error: limitCheck.error, limitExceeded: true });
       }
 
-      const result = await translateAndAnalyzeCore(text, mode, targetLang || "Korean", customGeminiKey, customDeeplKey);
+      const result = await translateAndAnalyzeCore(
+        text, 
+        mode, 
+        targetLang || "Korean", 
+        customGeminiKey, 
+        customDeeplKey,
+        translationEngine || "deepl"
+      );
       
       commitRequest(clientId, req.ip || "");
 
@@ -658,6 +672,9 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
 
       const rawClientId = req.body.clientId || req.query.clientId || req.body.client_id || req.query.client_id;
       const clientId = typeof rawClientId === "string" ? rawClientId : undefined;
+
+      const rawEngine = req.body.engine || req.query.engine;
+      const engine = typeof rawEngine === "string" ? rawEngine : "deepl";
 
       const estimatedTokens = Math.ceil(text ? text.length * 1.5 + 300 : 0);
       const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
@@ -901,7 +918,7 @@ CRITICAL JSON PROPERTY CONSTRAINT: Even though the response JSON schema specifie
       const deeplKey = (customDeeplKey && customDeeplKey.trim()) || getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
       const deeplLangCode = getDeepLLangCode(targetLang);
 
-      if (deeplKey && deeplLangCode) {
+      if (engine === "deepl" && deeplKey && deeplLangCode) {
         console.log(`[Fast Route] Found DeepL key. Querying DeepL translation for ${targetLang} (${deeplLangCode})...`);
         try {
           const isFree = deeplKey.endsWith(":fx");

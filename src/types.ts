@@ -36,5 +36,6 @@ export interface SavedTranslation {
   translation: string;
   mode: "balanced" | "scholarly" | "devotional";
   targetLang?: string;
+  translationEngine?: "deepl" | "gemini";
   result: TranslationResult;
 }

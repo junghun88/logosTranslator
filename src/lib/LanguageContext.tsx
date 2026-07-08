@@ -394,6 +394,22 @@ const dictionary: Record<string, Record<UiLang, string>> = {
   customKeyBypassActive: {
     en: "✨ Unlimited (Personal Key Active)",
     ko: "✨ 한도 없음 (개인 API 키 적용 중)",
+  },
+  translationEngineLabel: {
+    en: "Translation Service Selection",
+    ko: "번역 서비스 선택",
+  },
+  engineDeeplLabel: {
+    en: "DeepL (Default / High Precision)",
+    ko: "DeepL (기본 / 고정밀 직역)",
+  },
+  engineGeminiLabel: {
+    en: "Gemini (Simple Text Translation)",
+    ko: "Gemini (제미나이 단순 번역)",
+  },
+  translationEngineDesc: {
+    en: "Choose the primary translation service for direct literal translation comparison.",
+    ko: "영어에서 다른 언어로 직역할 때 사용할 주 엔진을 선택합니다.",
   }
 };
 
