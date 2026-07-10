@@ -144,6 +144,12 @@ interface RequestUsage {
 }
 const requestStore: Record<string, RequestUsage> = {};
 
+// Personal API Key Cache (In-Memory Fallback)
+// Allows macOS Shortcuts running from the same client ID or IP address
+// to automatically reuse the personal API key entered in the web browser.
+const clientKeyCache: Record<string, string> = {};
+const ipKeyCache: Record<string, string> = {};
+
 function getTodayString(): string {
   const d = new Date();
   // Adjust to KST (UTC+9) for South Korean users
@@ -511,7 +517,26 @@ You are performing a simple, direct, and straightforward language translation. F
       const customGeminiKey = geminiApiKey || (req.headers["x-gemini-api-key"] as string);
       const customDeeplKey = deeplApiKey || (req.headers["x-deepl-api-key"] as string);
 
-      const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
+      let resolvedGeminiKey = customGeminiKey && customGeminiKey.trim();
+      
+      // Save/Update in-memory cache if key is present
+      if (resolvedGeminiKey) {
+        if (clientId && clientId.trim()) {
+          clientKeyCache[clientId.trim()] = resolvedGeminiKey;
+        }
+        if (req.ip) {
+          ipKeyCache[req.ip] = resolvedGeminiKey;
+        }
+      } else {
+        // Fallback to cache if key not supplied in this request
+        if (clientId && clientId.trim() && clientKeyCache[clientId.trim()]) {
+          resolvedGeminiKey = clientKeyCache[clientId.trim()];
+        } else if (req.ip && ipKeyCache[req.ip]) {
+          resolvedGeminiKey = ipKeyCache[req.ip];
+        }
+      }
+
+      const hasCustomKey = !!resolvedGeminiKey;
       const estimatedTokens = Math.ceil(text.length * 1.5 + 1500);
 
       const limitCheck = checkRequestLimit(clientId, req.ip || "", hasCustomKey);
@@ -523,7 +548,7 @@ You are performing a simple, direct, and straightforward language translation. F
         text, 
         mode, 
         targetLang || "Korean", 
-        customGeminiKey, 
+        resolvedGeminiKey, 
         customDeeplKey,
         translationEngine || "gemini"
       );
@@ -627,6 +652,28 @@ You are performing a simple, direct, and straightforward language translation. F
     }
   });
 
+  // API route for registering personal API key to cache
+  app.post("/api/register-key", (req, res) => {
+    try {
+      const { geminiApiKey, clientId } = req.body;
+      const key = geminiApiKey && geminiApiKey.trim();
+      if (key) {
+        if (clientId && clientId.trim()) {
+          clientKeyCache[clientId.trim()] = key;
+        }
+        if (req.ip) {
+          ipKeyCache[req.ip] = key;
+        }
+        console.log(`[Register Key] Successfully registered API key for client: ${clientId || "unknown"}, IP: ${req.ip}`);
+        return res.json({ success: true });
+      }
+      return res.status(400).json({ error: "No API key provided" });
+    } catch (e: any) {
+      console.error("[Register Key] Error registering key:", e);
+      return res.status(500).json({ error: "Failed to register key" });
+    }
+  });
+
   // Dedicated API route that returns a beautifully pre-formatted Plain Text
   // perfect for macOS Shortcuts Quick Look / Popup without leaving Logos!
   const handleTranslateToText = async (req: express.Request, res: express.Response) => {
@@ -673,11 +720,30 @@ You are performing a simple, direct, and straightforward language translation. F
       const rawClientId = req.body.clientId || req.query.clientId || req.body.client_id || req.query.client_id;
       const clientId = typeof rawClientId === "string" ? rawClientId : undefined;
 
+      let resolvedGeminiKey = customGeminiKey && customGeminiKey.trim();
+      
+      // Save/Update in-memory cache if key is present
+      if (resolvedGeminiKey) {
+        if (clientId && clientId.trim()) {
+          clientKeyCache[clientId.trim()] = resolvedGeminiKey;
+        }
+        if (req.ip) {
+          ipKeyCache[req.ip] = resolvedGeminiKey;
+        }
+      } else {
+        // Fallback to cache if key not supplied in this request
+        if (clientId && clientId.trim() && clientKeyCache[clientId.trim()]) {
+          resolvedGeminiKey = clientKeyCache[clientId.trim()];
+        } else if (req.ip && ipKeyCache[req.ip]) {
+          resolvedGeminiKey = ipKeyCache[req.ip];
+        }
+      }
+
       const rawEngine = req.body.engine || req.query.engine;
       const engine = typeof rawEngine === "string" ? rawEngine : "gemini";
 
       const estimatedTokens = Math.ceil(text ? text.length * 1.5 + 300 : 0);
-      const hasCustomKey = !!(customGeminiKey && customGeminiKey.trim());
+      const hasCustomKey = !!resolvedGeminiKey;
 
       if (text && typeof text === "string" && text.trim()) {
         const limitCheck = checkRequestLimit(clientId, req.ip || "", hasCustomKey);
@@ -914,7 +980,7 @@ You are performing a simple, direct, and straightforward language translation. F
 
       // Gemini Translation Route (Optimized for maximum speed and quality)
       console.log(`[Fast Route] Using fast Gemini translation into ${targetLang}...`);
-      const apiKey = customGeminiKey && customGeminiKey.trim();
+      const apiKey = resolvedGeminiKey;
       if (!apiKey) {
         throw new Error("개인 구글 Gemini API Key가 입력되지 않았습니다. 번역 서비스 이용 정책에 따라 웹 대시보드 로그인 후 개인 API 키를 반드시 등록해 주세요.");
       }

@@ -105,6 +105,15 @@ export default function App() {
       }
       setClientId(cid);
 
+      // Register custom key on server on mount if it exists
+      if (gemini && cid) {
+        fetch("/api/register-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ geminiApiKey: gemini, clientId: cid })
+        }).catch(err => console.error("Failed to register key on mount:", err));
+      }
+
       // Daily Translation Count loading
       const storedUsageDate = localStorage.getItem("logos_translation_count_date") || "";
       const today = new Date().toISOString().split("T")[0];
@@ -156,6 +165,15 @@ export default function App() {
     setSavedGeminiKey(gemini);
     setCustomGeminiKey(gemini);
     localStorage.setItem("logos_custom_gemini_key", gemini);
+
+    if (gemini && clientId) {
+      fetch("/api/register-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ geminiApiKey: gemini, clientId })
+      }).catch(err => console.error("Failed to register key on login:", err));
+    }
+
     window.dispatchEvent(new Event("logos_keys_updated"));
   };
 
@@ -165,6 +183,15 @@ export default function App() {
     setCurrentUser(null);
     setSavedGeminiKey("");
     setCustomGeminiKey("");
+
+    if (clientId) {
+      fetch("/api/register-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ geminiApiKey: "", clientId })
+      }).catch(err => console.error("Failed to clear key on logout:", err));
+    }
+
     window.dispatchEvent(new Event("logos_keys_updated"));
   };
 
@@ -177,6 +204,14 @@ export default function App() {
       setSavedGeminiKey(customGeminiKey);
       setKeysSavedStatus("saved");
       
+      if (customGeminiKey && clientId) {
+        fetch("/api/register-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ geminiApiKey: customGeminiKey, clientId })
+        }).catch(err => console.error("Failed to register key on save:", err));
+      }
+
       // Notify other components (like MacShortcutGuide)
       window.dispatchEvent(new Event("logos_keys_updated"));
 
@@ -195,6 +230,14 @@ export default function App() {
       setCustomGeminiKey("");
       setSavedGeminiKey("");
       setKeysSavedStatus("cleared");
+
+      if (clientId) {
+        fetch("/api/register-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ geminiApiKey: "", clientId })
+        }).catch(err => console.error("Failed to clear key on server:", err));
+      }
 
       // Notify other components (like MacShortcutGuide)
       window.dispatchEvent(new Event("logos_keys_updated"));
