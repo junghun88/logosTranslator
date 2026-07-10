@@ -26,10 +26,12 @@ import TranslationViewer from "./components/TranslationViewer";
 import HistoryList from "./components/HistoryList";
 import MacShortcutGuide from "./components/MacShortcutGuide";
 import { useLanguage } from "./lib/LanguageContext";
+import AuthScreen from "./components/AuthScreen";
 
 export default function App() {
   const { uiLang, setUiLang, t } = useLanguage();
 
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"balanced" | "scholarly" | "devotional">("balanced");
   const [targetLang, setTargetLang] = useState<string>("Korean");
@@ -42,33 +44,13 @@ export default function App() {
   const [showGuide, setShowGuide] = useState(false);
 
   // Translation Engine State
-  const [translationEngine, setTranslationEngine] = useState<"deepl" | "gemini">(() => {
-    try {
-      const saved = localStorage.getItem("logos_translation_engine");
-      return saved === "deepl" || saved === "gemini" ? saved : "gemini";
-    } catch {
-      return "gemini";
-    }
-  });
-
-  const handleSelectEngine = (engine: "deepl" | "gemini") => {
-    setTranslationEngine(engine);
-    try {
-      localStorage.setItem("logos_translation_engine", engine);
-      window.dispatchEvent(new Event("logos_keys_updated"));
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const translationEngine = "gemini";
 
   // Custom API Keys State
   const [savedGeminiKey, setSavedGeminiKey] = useState("");
-  const [savedDeeplKey, setSavedDeeplKey] = useState("");
   const [customGeminiKey, setCustomGeminiKey] = useState("");
-  const [customDeeplKey, setCustomDeeplKey] = useState("");
   const [showApiSettings, setShowApiSettings] = useState(false);
   const [showGeminiPwd, setShowGeminiPwd] = useState(false);
-  const [showDeeplPwd, setShowDeeplPwd] = useState(false);
   const [keysSavedStatus, setKeysSavedStatus] = useState<"idle" | "saved" | "cleared">("idle");
 
   // Client ID and Token Usage States
@@ -103,12 +85,17 @@ export default function App() {
   // Load saved keys, client ID and token usage on mount
   useEffect(() => {
     try {
-      const gemini = localStorage.getItem("logos_custom_gemini_key") || "";
-      const deepl = localStorage.getItem("logos_custom_deepl_key") || "";
-      setSavedGeminiKey(gemini);
-      setCustomGeminiKey(gemini);
-      setSavedDeeplKey(deepl);
-      setCustomDeeplKey(deepl);
+      const user = localStorage.getItem("logos_current_user");
+      let gemini = "";
+      if (user) {
+        setCurrentUser(user);
+        gemini = localStorage.getItem(`logos_custom_gemini_key_${user}`) || "";
+        setSavedGeminiKey(gemini);
+        setCustomGeminiKey(gemini);
+        localStorage.setItem("logos_custom_gemini_key", gemini);
+      } else {
+        localStorage.removeItem("logos_custom_gemini_key");
+      }
 
       // Client ID loading/generating
       let cid = localStorage.getItem("logos_client_id") || "";
@@ -162,13 +149,32 @@ export default function App() {
     }
   }, [clientId, savedGeminiKey]);
 
+  const handleLoginSuccess = (username: string) => {
+    localStorage.setItem("logos_current_user", username);
+    setCurrentUser(username);
+    const gemini = localStorage.getItem(`logos_custom_gemini_key_${username}`) || "";
+    setSavedGeminiKey(gemini);
+    setCustomGeminiKey(gemini);
+    localStorage.setItem("logos_custom_gemini_key", gemini);
+    window.dispatchEvent(new Event("logos_keys_updated"));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("logos_current_user");
+    localStorage.removeItem("logos_custom_gemini_key");
+    setCurrentUser(null);
+    setSavedGeminiKey("");
+    setCustomGeminiKey("");
+    window.dispatchEvent(new Event("logos_keys_updated"));
+  };
+
   // Save personal API keys
   const handleSaveApiKeys = () => {
     try {
+      if (!currentUser) return;
+      localStorage.setItem(`logos_custom_gemini_key_${currentUser}`, customGeminiKey);
       localStorage.setItem("logos_custom_gemini_key", customGeminiKey);
-      localStorage.setItem("logos_custom_deepl_key", customDeeplKey);
       setSavedGeminiKey(customGeminiKey);
-      setSavedDeeplKey(customDeeplKey);
       setKeysSavedStatus("saved");
       
       // Notify other components (like MacShortcutGuide)
@@ -183,12 +189,11 @@ export default function App() {
   // Clear personal API keys
   const handleClearApiKeys = () => {
     try {
+      if (!currentUser) return;
+      localStorage.removeItem(`logos_custom_gemini_key_${currentUser}`);
       localStorage.removeItem("logos_custom_gemini_key");
-      localStorage.removeItem("logos_custom_deepl_key");
       setCustomGeminiKey("");
-      setCustomDeeplKey("");
       setSavedGeminiKey("");
-      setSavedDeeplKey("");
       setKeysSavedStatus("cleared");
 
       // Notify other components (like MacShortcutGuide)
@@ -235,32 +240,14 @@ export default function App() {
     const modeParam = params.get("mode");
     const targetLangParam = params.get("targetLang") || params.get("target_lang") || params.get("lang");
     const geminiKeyParam = params.get("gemini_key") || params.get("geminiApiKey");
-    const deeplKeyParam = params.get("deepl_key") || params.get("deeplApiKey");
-    const engineParam = params.get("engine");
 
     let activeGeminiKey = localStorage.getItem("logos_custom_gemini_key") || "";
-    let activeDeeplKey = localStorage.getItem("logos_custom_deepl_key") || "";
-
-    if (engineParam === "deepl" || engineParam === "gemini") {
-      setTranslationEngine(engineParam);
-      try {
-        localStorage.setItem("logos_translation_engine", engineParam);
-      } catch (e) {
-        console.error(e);
-      }
-    }
 
     if (geminiKeyParam) {
       localStorage.setItem("logos_custom_gemini_key", geminiKeyParam);
       setSavedGeminiKey(geminiKeyParam);
       setCustomGeminiKey(geminiKeyParam);
       activeGeminiKey = geminiKeyParam;
-    }
-    if (deeplKeyParam) {
-      localStorage.setItem("logos_custom_deepl_key", deeplKeyParam);
-      setSavedDeeplKey(deeplKeyParam);
-      setCustomDeeplKey(deeplKeyParam);
-      activeDeeplKey = deeplKeyParam;
     }
 
     if (textParam) {
@@ -292,7 +279,7 @@ export default function App() {
 
       // Automatically trigger translation with a slight delay to allow rendering
       const timer = setTimeout(() => {
-        handleTranslate(decodedText, finalMode, finalLang, activeGeminiKey, activeDeeplKey);
+        handleTranslate(decodedText, finalMode, finalLang, activeGeminiKey);
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -315,8 +302,7 @@ export default function App() {
     textToTranslate: any = text,
     modeToUse: "balanced" | "scholarly" | "devotional" = mode,
     langToUse: string = targetLang,
-    geminiKeyOverride?: string,
-    deeplKeyOverride?: string
+    geminiKeyOverride?: string
   ) => {
     const safeText = typeof textToTranslate === "string" ? textToTranslate : String(textToTranslate || "");
     if (!safeText.trim()) {
@@ -340,9 +326,8 @@ export default function App() {
           mode: modeToUse,
           targetLang: langToUse,
           geminiApiKey: geminiKeyOverride !== undefined ? geminiKeyOverride : savedGeminiKey,
-          deeplApiKey: deeplKeyOverride !== undefined ? deeplKeyOverride : savedDeeplKey,
           clientId: clientId,
-          translationEngine: translationEngine
+          translationEngine: "gemini"
         })
       });
 
@@ -433,7 +418,7 @@ export default function App() {
         translation: result.translation,
         mode,
         targetLang,
-        translationEngine,
+        translationEngine: "gemini",
         result
       };
       const updated = [newItem, ...history];
@@ -447,9 +432,6 @@ export default function App() {
     setText(item.originalText);
     setMode(item.mode);
     setTargetLang(item.targetLang || "Korean");
-    if (item.translationEngine) {
-      setTranslationEngine(item.translationEngine);
-    }
     setActiveHistoryId(item.id);
   };
 
@@ -487,6 +469,10 @@ export default function App() {
     item => result && item.originalText === result.originalText && item.mode === mode && (item.targetLang || "Korean") === targetLang
   );
 
+  if (!currentUser) {
+    return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 font-sans selection:bg-stone-800 selection:text-white">
       {/* Elegantly Crafted Academic Header */}
@@ -512,6 +498,20 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {currentUser && (
+              <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 shrink-0 text-xs text-stone-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="font-serif font-bold text-stone-800">{currentUser}</span>
+                <span className="text-stone-300">|</span>
+                <button
+                  onClick={handleLogout}
+                  className="font-semibold text-stone-500 hover:text-stone-900 underline cursor-pointer"
+                >
+                  {uiLang === "ko" ? "로그아웃" : "Logout"}
+                </button>
+              </div>
+            )}
+
             {/* Language Toggle Segmented Control */}
             <div className="inline-flex bg-stone-100 p-0.5 border border-stone-200 rounded-lg text-xs font-semibold shrink-0">
               <button
@@ -630,7 +630,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {/* Gemini Key Input */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-serif font-bold text-stone-700 flex items-center justify-between">
@@ -653,32 +653,6 @@ export default function App() {
                         className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700"
                       >
                         {showGeminiPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* DeepL Key Input */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-serif font-bold text-stone-700 flex items-center justify-between">
-                      <span>{t("deeplKeyLabel")}</span>
-                      <a href="https://www.deepl.com/pro-api" target="_blank" rel="noreferrer" className="text-[10px] text-stone-600 hover:underline flex items-center gap-0.5">
-                        DeepL API Portal <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showDeeplPwd ? "text" : "password"}
-                        placeholder="e.g. 12345678-abcd-efgh-ijkl-1234567890ab:fx"
-                        value={customDeeplKey}
-                        onChange={(e) => setCustomDeeplKey(e.target.value)}
-                        className="w-full p-2.5 pr-10 border border-stone-200 rounded-lg text-xs leading-relaxed font-mono focus:outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500 bg-stone-50/50"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowDeeplPwd(!showDeeplPwd)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700"
-                      >
-                        {showDeeplPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
@@ -885,77 +859,50 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Translation Engine / Service Selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-serif font-bold text-stone-600 block flex items-center justify-between">
-                  <span>{t("translationEngineLabel")}</span>
-                  <span className="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-serif font-semibold">
-                    Engine Option
-                  </span>
-                </label>
-                <div className="grid grid-cols-2 gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-lg">
+
+
+              {/* Action Button / API Key Requirement Policy */}
+              {!savedGeminiKey ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-stone-700 space-y-3 shadow-xs">
+                  <div className="flex items-center gap-2 text-amber-800 font-bold">
+                    <Key className="w-4 h-4 shrink-0" />
+                    <span>구글 Gemini API Key 입력 필수 정책</span>
+                  </div>
+                  <p className="leading-relaxed font-serif text-stone-600">
+                    로고스 번역 동반자 서비스 이용 정책에 따라 <strong>개인 API Key가 등록되어야</strong> 신학 분석 및 번역 서비스가 활성화됩니다. 우측 상단의 API Key 설정 창에서 발급받은 본인 키를 입력해 주세요.
+                  </p>
                   <button
-                    onClick={() => handleSelectEngine("gemini")}
-                    className={`py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center transition-all ${
-                      translationEngine === "gemini"
-                        ? "bg-white text-stone-900 border border-stone-300 shadow-xs"
-                        : "text-stone-500 hover:text-stone-800"
-                    }`}
+                    onClick={() => {
+                      setShowApiSettings(true);
+                      if (showGuide) setShowGuide(false);
+                    }}
+                    className="w-full py-2 bg-amber-800 hover:bg-amber-900 text-stone-50 rounded-lg text-center font-bold text-[11px] transition-colors cursor-pointer"
                   >
-                    <span>Gemini</span>
-                    <span className="text-[9px] font-normal opacity-60 font-serif italic mt-0.5">
-                      {uiLang === "ko" ? "기본 권장" : "Default"}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handleSelectEngine("deepl")}
-                    className={`py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center transition-all ${
-                      translationEngine === "deepl"
-                        ? "bg-white text-stone-900 border border-stone-300 shadow-xs"
-                        : "text-stone-500 hover:text-stone-800"
-                    }`}
-                  >
-                    <span>DeepL</span>
-                    <span className="text-[9px] font-normal opacity-60 font-serif italic mt-0.5">
-                      {uiLang === "ko" ? "고정밀 선택" : "High Precision"}
-                    </span>
+                    ⚙️ 개인 API Key 설정 열기
                   </button>
                 </div>
-                {translationEngine === "deepl" && !savedDeeplKey && (
-                  <p className="text-[10px] text-amber-700 bg-amber-50/70 border border-amber-100 rounded px-2.5 py-1.5 leading-relaxed mt-1">
-                    {uiLang === "ko" 
-                      ? "⚠️ 개인 DeepL API Key가 등록되지 않았습니다. API 키를 설정하지 않을 경우, 자동으로 Gemini 단순 번역 엔진이 한글 역본으로 적용됩니다."
-                      : "⚠️ Personal DeepL API key is not configured. Gemini simple translation will be used as fallback."}
-                  </p>
-                )}
-                {translationEngine === "gemini" && (
-                  <p className="text-[10px] text-stone-500 leading-normal pl-0.5">
-                    {t("translationEngineDesc")}
-                  </p>
-                )}
-              </div>
-
-              {/* Action Button */}
-              <button
-                onClick={() => handleTranslate()}
-                disabled={loading || !text.trim()}
-                className="w-full py-3 bg-stone-900 hover:bg-stone-950 text-stone-50 rounded-lg font-semibold text-xs disabled:opacity-40 shadow-sm transition-colors flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    <span>Analyzing & Translating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Run Theological Parsing</span>
-                  </>
-                )}
-              </button>
+              ) : (
+                <button
+                  onClick={() => handleTranslate()}
+                  disabled={loading || !text.trim()}
+                  className="w-full py-3 bg-stone-900 hover:bg-stone-950 text-stone-50 rounded-lg font-semibold text-xs disabled:opacity-40 shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Analyzing & Translating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Run Theological Parsing</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               {/* Quick tip */}
               <div className="bg-stone-50 border border-stone-100 rounded-lg p-3 text-[11px] text-stone-500 flex gap-2">

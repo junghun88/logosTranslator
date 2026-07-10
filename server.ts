@@ -236,10 +236,10 @@ async function startServer() {
   ) {
     console.log(`[Translate API] Received request. Text length: ${text.length}, Mode: ${mode}, Target Language: ${targetLang}, Engine: ${translationEngine}`);
     
-    const apiKey = (customGeminiKey && customGeminiKey.trim()) || getCleanEnv("GEMINI_API_KEY");
+    const apiKey = customGeminiKey && customGeminiKey.trim();
     if (!apiKey) {
-      console.error("[Translate API] Error: GEMINI_API_KEY is not configured.");
-      throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 서비스 관리자의 GEMINI_API_KEY가 등록되어 있지 않거나 사용자의 개인 API Key가 입력되지 않았습니다. 앱 설정이나 우측 상단 Secrets 메뉴에서 등록해 주세요.");
+      console.error("[Translate API] Error: User's personal GEMINI_API_KEY is not configured.");
+      throw new Error("개인 구글 Gemini API Key가 입력되지 않았습니다. 번역 서비스 이용 정책에 따라 개인 API 키를 등록하셔야 번역 서비스를 이용하실 수 있습니다.");
     }
 
     // Check and invoke DeepL if key is configured (support both DEEPL_API_KEY and DEEP_API_KEY) and engine is 'deepl'
@@ -396,11 +396,11 @@ You are performing a simple, direct, and straightforward language translation. F
     };
 
     try {
-      console.log("[Translate API] Trying primary model: gemini-3.5-flash...");
+      console.log("[Translate API] Trying primary model: gemini-2.5-flash...");
       response = await generateContentWithRetry(
         ai,
         {
-          model: "gemini-3.5-flash",
+          model: "gemini-2.5-flash",
           contents: prompt,
           config: {
             systemInstruction,
@@ -412,7 +412,7 @@ You are performing a simple, direct, and straightforward language translation. F
         "구글 Gemini API 요청 시간 초과 (60초). 번역 및 분석 내용이 길거나 현재 구글 서버 트래픽이 일시적으로 매우 높은 상태입니다. 다시 한 번 번역 단축키를 누르거나 잠시 후 '다시 시도하기'를 클릭해 주세요."
       );
     } catch (primaryErr: any) {
-      console.warn("[Translate API] Primary model (gemini-3.5-flash) failed, returned 503, or timed out. Attempting failover to gemini-2.5-flash...", primaryErr?.message || primaryErr);
+      console.warn("[Translate API] Primary model (gemini-2.5-flash) failed or timed out. Attempting backup request...", primaryErr?.message || primaryErr);
       
       try {
         response = await generateContentWithRetry(
@@ -429,9 +429,9 @@ You are performing a simple, direct, and straightforward language translation. F
           60000, // 60-second timeout
           "복구용 Gemini API 요청 시간 초과 (60초). 현재 인공지능 서버 트래픽이 극도로 많거나 원문 본문의 분석량이 매우 많습니다. 잠시만 대기 후 다시 시도해 주세요."
         );
-        console.log("[Translate API] Failover to gemini-2.5-flash succeeded.");
+        console.log("[Translate API] Backup request to gemini-2.5-flash succeeded.");
       } catch (fallbackErr: any) {
-        console.error("[Translate API] Fallback model (gemini-2.5-flash) also failed:", fallbackErr?.message || fallbackErr);
+        console.error("[Translate API] Backup request also failed:", fallbackErr?.message || fallbackErr);
         throw fallbackErr;
       }
     }
@@ -912,75 +912,23 @@ You are performing a simple, direct, and straightforward language translation. F
         return res.status(200).send(lines.join("\n"));
       }
 
-      // 1. Try to fetch DeepL translation if configured for lightning fast simple translation
-      let deeplTranslation: string | null = null;
-      let usedDeepL = false;
-      const deeplKey = (customDeeplKey && customDeeplKey.trim()) || getCleanEnv("DEEPL_API_KEY") || getCleanEnv("DEEP_API_KEY");
-      const deeplLangCode = getDeepLLangCode(targetLang);
-
-      if (engine === "deepl" && deeplKey && deeplLangCode) {
-        console.log(`[Fast Route] Found DeepL key. Querying DeepL translation for ${targetLang} (${deeplLangCode})...`);
-        try {
-          const isFree = deeplKey.endsWith(":fx");
-          const deeplUrl = isFree 
-            ? "https://api-free.deepl.com/v2/translate" 
-            : "https://api.deepl.com/v2/translate";
-
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second timeout for speed
-
-          const deeplRes = await fetch(deeplUrl, {
-            method: "POST",
-            headers: {
-              "Authorization": `DeepL-Auth-Key ${deeplKey}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              text: [text],
-              target_lang: deeplLangCode
-            }),
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
-
-          if (deeplRes.ok) {
-            const deeplData = await deeplRes.json() as { translations: { text: string }[] };
-            if (deeplData?.translations?.[0]?.text) {
-              deeplTranslation = deeplData.translations[0].text;
-              usedDeepL = true;
-              console.log("[Fast Route] DeepL translation completed successfully.");
-            }
-          }
-        } catch (deeplErr) {
-          console.warn("[Fast Route] DeepL query failed, falling back to simple Gemini...", deeplErr);
-        }
+      // Gemini Translation Route (Optimized for maximum speed and quality)
+      console.log(`[Fast Route] Using fast Gemini translation into ${targetLang}...`);
+      const apiKey = customGeminiKey && customGeminiKey.trim();
+      if (!apiKey) {
+        throw new Error("개인 구글 Gemini API Key가 입력되지 않았습니다. 번역 서비스 이용 정책에 따라 웹 대시보드 로그인 후 개인 API 키를 반드시 등록해 주세요.");
       }
 
-      let translationResult = "";
-      let engineName = "";
-
-      if (usedDeepL && deeplTranslation) {
-        translationResult = deeplTranslation;
-        engineName = `DeepL 고정밀 초고속 번역 (${targetLang})`;
-      } else {
-        // Fallback to simple Gemini translation if DeepL is not available or failed
-        console.log(`[Fast Route] DeepL is not available or failed. Using fast Gemini translation into ${targetLang}...`);
-        const apiKey = (customGeminiKey && customGeminiKey.trim()) || getCleanEnv("GEMINI_API_KEY");
-        if (!apiKey) {
-          throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. 서비스 관리자의 GEMINI_API_KEY가 등록되어 있지 않거나 사용자의 개인 API Key가 입력되지 않았습니다. 앱 설정이나 우측 상단 Secrets 메뉴에서 등록해 주세요.");
-        }
-
-        const ai = new GoogleGenAI({
-          apiKey,
-          httpOptions: {
-            headers: {
-              'User-Agent': 'aistudio-build',
-            }
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
           }
-        });
+        }
+      });
 
-        const fastPrompt = `You are an expert biblical translator and Christian literature scholar. 
+      const fastPrompt = `You are an expert biblical translator and Christian literature scholar. 
 Translate the following English theological/commentary/biblical text into highly accurate, natural, and elegant ${targetLang}.
 Maintain standard Christian terminology in ${targetLang} (e.g., if ${targetLang} is Korean, use '하나님', '예수 그리스도', '은혜' 등).
 Do NOT include any introduction, explanations, metadata, markdown backticks, or notes. Return ONLY the translated ${targetLang} text.
@@ -988,24 +936,20 @@ Do NOT include any introduction, explanations, metadata, markdown backticks, or 
 Text to translate:
 "${text}"`;
 
-        const response = await generateContentWithRetry(
-          ai,
-          {
-            model: "gemini-3.5-flash",
-            contents: fastPrompt,
-            config: {
-              thinkingConfig: {
-                thinkingLevel: "MINIMAL"
-              }
-            }
-          },
-          15000,
-          "구글 Gemini API 응답 지연"
-        );
+      // Use gemini-2.5-flash which is extremely fast and high fidelity for translation without thinking overhead
+      const response = await generateContentWithRetry(
+        ai,
+        {
+          model: "gemini-2.5-flash",
+          contents: fastPrompt,
+          config: {} // No thinkingConfig is passed, avoiding extra inference latency for simple translation
+        },
+        12000,
+        "구글 Gemini API 응답 지연"
+      );
 
-        translationResult = response?.text || "";
-        engineName = `Gemini 초고속 신학 번역 (${targetLang})`;
-      }
+      const translationResult = response?.text || "";
+      const engineName = `Gemini 초고속 신학 번역 (${targetLang})`;
 
       commitRequest(clientId, req.ip || "");
 
@@ -1013,32 +957,6 @@ Text to translate:
       const finalDailyTotal = requestStore[finalKey]?.count || 0;
 
       let fallbackMessage = "";
-      if (engine === "deepl" && !usedDeepL) {
-        fallbackMessage = "⚠️ 개인 DeepL API Key가 등록되지 않았거나 번역이 실패하여, 기본 번역 서비스인 Gemini 엔진으로 자동 대체되었습니다. 개인 API 키는 웹 대시보드 우측 상단에서 등록할 수 있습니다.";
-      }
-
-      // Pre-compile the links for engine switcher using all parameters to avoid losing state or breaking in WebView sandboxes
-      const allParams = new URLSearchParams();
-      allParams.set("html", "true");
-      if (text) allParams.set("text", text);
-      if (mode) allParams.set("mode", mode);
-      if (targetLang) allParams.set("targetLang", targetLang);
-      if (customGeminiKey) allParams.set("geminiApiKey", customGeminiKey);
-      if (customDeeplKey) allParams.set("deeplApiKey", customDeeplKey);
-      if (clientId) allParams.set("clientId", clientId);
-
-      // Generate fully absolute URLs for the switcher links to avoid relative path resolution bugs in sandboxed macOS Shortcuts WebViews
-      const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
-      const host = req.get("host") || "localhost:3000";
-      const baseUrl = `${protocol}://${host}/api/translate-text`;
-
-      const geminiParams = new URLSearchParams(allParams);
-      geminiParams.set("engine", "gemini");
-      const geminiUrl = `${baseUrl}?${geminiParams.toString()}`;
-
-      const deeplParams = new URLSearchParams(allParams);
-      deeplParams.set("engine", "deepl");
-      const deeplUrlPath = `${baseUrl}?${deeplParams.toString()}`;
 
       if (isHtml) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -1068,8 +986,8 @@ Text to translate:
       border-radius: 12px;
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       width: 100%;
-      max-width: 720px;
-      padding: 32px;
+      max-width: 920px;
+      padding: 40px;
       box-sizing: border-box;
     }
     .header {
@@ -1081,7 +999,7 @@ Text to translate:
       margin-bottom: 20px;
     }
     .title {
-      font-size: 15px;
+      font-size: 15.5px;
       font-weight: 700;
       color: #44403c;
       display: flex;
@@ -1097,12 +1015,12 @@ Text to translate:
       font-family: monospace;
     }
     .section-title {
-      font-size: 12px;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #78716c;
-      margin-top: 20px;
-      margin-bottom: 8px;
+      margin-top: 24px;
+      margin-bottom: 10px;
       font-weight: 600;
     }
     .engine-switcher {
@@ -1154,12 +1072,12 @@ Text to translate:
       background-color: #fafaf9;
       border: 1px solid #f5f5f4;
       border-radius: 8px;
-      padding: 18px;
-      font-size: 14.5px;
-      line-height: 1.65;
+      padding: 22px;
+      font-size: 15.5px;
+      line-height: 1.7;
       white-space: pre-wrap;
       word-break: break-word;
-      min-height: 120px;
+      min-height: 220px;
     }
     .original {
       color: #57534e;
@@ -1185,230 +1103,7 @@ Text to translate:
       padding: 12px 18px;
       font-size: 13px;
       font-weight: 600;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-primary {
-      background-color: #1c1917;
-      color: #ffffff;
-    }
-    .btn-primary:hover {
-      background-color: #44403c;
-    }
-    .btn-secondary {
-      background-color: #ffffff;
-      color: #44403c;
-      border: 1px solid #d6d3d1;
-    }
-    .btn-secondary:hover {
-      background-color: #fafaf9;
-    }
-    .footer {
-      font-size: 11px;
-      color: #a8a29e;
-      text-align: center;
-      margin-top: 16px;
-      border-top: 1px dashed #e7e5e4;
-      padding-top: 12px;
-      line-height: 1.4;
-    }
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background-color: #1c1917;
-      color: #ffffff;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 500;
-      border-radius: 20px;
-      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 999;
-      pointer-events: none;
-    }
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-    }
-    .loading-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.85);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      border-radius: 12px;
-    }
-    .loading-overlay.active {
-      display: flex;
-    }
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #e7e5e4;
-      border-top: 3px solid #1c1917;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 12px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .loading-text {
-      font-size: 12px;
-      font-weight: 600;
-      color: #44403c;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div id="loadingOverlay" class="loading-overlay">
-      <div class="spinner"></div>
-      <div class="loading-text">번역 서비스 전환 중 (Loading)...</div>
-    </div>
-
-    <div class="header">
-      <div class="title">
-        <span>📖</span> LOGOS TRANSLATION COMPANION
-      </div>
-      <div class="subtitle">FAST MODE</div>
-    </div>
-
-    <div class="engine-switcher">
-      <a class="engine-tab ${engine === 'gemini' ? 'active' : ''}" href="${geminiUrl}" onclick="switchEngine(event, '${geminiUrl}')">
-        Gemini (기본 권장)
-      </a>
-      <a class="engine-tab ${engine === 'deepl' ? 'active' : ''}" href="${deeplUrlPath}" onclick="switchEngine(event, '${deeplUrlPath}')">
-        DeepL (고정밀 선택)
-      </a>
-    </div>
-
-    ${fallbackMessage ? `<div class="fallback-banner">${escapeHtml(fallbackMessage)}</div>` : ""}
-
-    <div class="section-title">Logos English Original</div>
-    <div class="text-box original" id="originalText">${escapeHtml(text)}</div>
-
-    <div class="section-title">${escapeHtml(engineName)}</div>
-    <div class="text-box translation" id="translationText">${escapeHtml(translationResult)}</div>
-
-    <div class="button-group">
-      <button class="btn btn-primary" onclick="copyTranslation()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-        번역 텍스트 복사 (Copy)
-      </button>
-      <button class="btn btn-secondary" onclick="copyAll()">
-        원문+번역 복사
-      </button>
-      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">닫기 (Close)</button>
-    </div>
-
-    <div class="footer" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center;">
-      <div>⚡️ Running in high-speed popup mode via system shortcut.</div>
-      <div style="font-size: 10px; color: #78716c; font-weight: 500; background-color: #f5f5f4; padding: 2px 8px; border-radius: 12px; border: 1px solid #e7e5e4; margin-top: 4px; display: inline-block;">
-        ${hasCustomKey ? "✨ 한도 없음 (개인 API 키 적용 중)" : `📊 오늘 무료 번역: ${finalDailyTotal} / 50 회`}
-      </div>
-    </div>
-  </div>
-
-  <div id="toast" class="toast">복사 완료!</div>
-
-  <script>
-    function switchEngine(event, url) {
-      if (event) event.preventDefault();
-      const overlay = document.getElementById('loadingOverlay');
-      if (overlay) {
-        overlay.classList.add('active');
-      }
-      setTimeout(() => {
-        window.location.href = url;
-      }, 50);
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.innerText = msg;
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2000);
-    }
-
-    function copyTranslation() {
-      const text = document.getElementById('translationText').innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        showToast('번역 텍스트가 클립보드에 복사되었습니다!');
-      }).catch(err => {
-        alert('복사 실패: ' + err);
-      });
-    }
-
-    function copyAll() {
-      const orig = document.getElementById('originalText').innerText;
-      const trans = document.getElementById('translationText').innerText;
-      const fullText = "[ Logos English Original ]\n" + orig + "\n\n[ ${engineName} ]\n" + trans;
-      navigator.clipboard.writeText(fullText).then(() => {
-        showToast('전체 카드가 클립보드에 복사되었습니다!');
-      }).catch(err => {
-        alert('복사 실패: ' + err);
-      });
-    }
-  </script>s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 999;
-      pointer-events: none;
-    }
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="header">
-      <div class="title">
-        <span>📖</span> LOGOS TRANSLATION COMPANION
-      </div>
-      <div class="subtitle">FAST MODE</div>
-    </div>
-
-    <div class="engine-switcher">
-      <a class="engine-tab ${engine === 'gemini' ? 'active' : ''}" href="${geminiUrl}">
-        Gemini (기본 권장)
-      </a>
-      <a class="engine-tab ${engine === 'deepl' ? 'active' : ''}" href="${deeplUrlPath}">
-        DeepL (고정밀 선택)
-      </a>
-    </div>
-
-    ${fallbackMessage ? `<div class="fallback-banner">${escapeHtml(fallbackMessage)}</div>` : ""}
-
-    <div class="section-title">Logos English Original</div>
-    <div class="text-box original" id="originalText">${escapeHtml(text)}</div>
-
-    <div class="section-title">${escapeHtml(engineName)}</div>
-    <div class="text-box translation" id="translationText">${escapeHtml(translationResult)}</div>
-
-    <div class="button-group">
-      <button class="btn btn-primary" onclick="copyTranslation()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-        번역 텍스트 복사 (Copy)
-      </button>
-      <button class="btn btn-secondary" onclick="copyAll()">
-        원문+번역 복사
-      </button>
-      <button class="btn btn-secondary" style="flex: 0.5;" onclick="window.close()">닫기 (Close)</button>
-    </div>
-
-    <div class="footer" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center;">
+     <div class="footer" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center;">
       <div>⚡️ Running in high-speed popup mode via system shortcut.</div>
       <div style="font-size: 10px; color: #78716c; font-weight: 500; background-color: #f5f5f4; padding: 2px 8px; border-radius: 12px; border: 1px solid #e7e5e4; margin-top: 4px; display: inline-block;">
         ${hasCustomKey ? "✨ 한도 없음 (개인 API 키 적용 중)" : `📊 오늘 무료 번역: ${finalDailyTotal} / 50 회`}
@@ -1440,7 +1135,7 @@ Text to translate:
     function copyAll() {
       const orig = document.getElementById('originalText').innerText;
       const trans = document.getElementById('translationText').innerText;
-      const fullText = "[ Logos English Original ]\\n" + orig + "\\n\\n[ ${engineName} ]\\n" + trans;
+      const fullText = "[ Logos English Original ]\\n" + orig + "\\n\\n[ ${escapeHtml(engineName)} ]\\n" + trans;
       navigator.clipboard.writeText(fullText).then(() => {
         showToast('전체 카드가 클립보드에 복사되었습니다!');
       }).catch(err => {

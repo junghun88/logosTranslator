@@ -143,24 +143,7 @@ export default function TranslationViewer({
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* DeepL Info Banner when not used */}
-            {!result.deeplUsed && (
-              <div className="bg-stone-50 border border-stone-200 rounded-lg p-3.5 text-xs text-stone-600 flex items-start gap-2.5">
-                <span className="text-stone-400 font-bold shrink-0">{t("deeplGuideTitle")}</span>
-                <p className="leading-relaxed">
-                  {t("deeplGuideText")}
-                </p>
-              </div>
-            )}
-
-            {/* DeepL Error Info if failed */}
-            {result.deeplError && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                {t("deeplErrorText")} ({result.deeplError})
-              </div>
-            )}
-
-            <div className={`grid grid-cols-1 ${result.deeplUsed ? "lg:grid-cols-3" : "md:grid-cols-2"} gap-6`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Original text block */}
               <div className="bg-stone-50 border border-stone-100 rounded-xl p-5 relative group flex flex-col justify-between">
                 <div>
@@ -194,44 +177,6 @@ export default function TranslationViewer({
                   </button>
                 </div>
               </div>
-
-              {/* DeepL Literal Translation (Only if used) */}
-              {result.deeplUsed && result.deeplTranslation && (
-                <div className="bg-blue-50/20 border border-blue-100/70 rounded-xl p-5 relative group flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-center mb-2.5">
-                      <h4 className="font-mono text-[10px] uppercase text-blue-600/70 tracking-wider font-semibold">
-                        {t("literalLabel")}
-                      </h4>
-                      <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-sans font-medium">
-                        {t("deeplBadge")}
-                      </span>
-                    </div>
-                    <div className="font-sans text-sm text-stone-800 leading-relaxed whitespace-pre-line">
-                      {result.deeplTranslation}
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-2 border-t border-blue-100/30 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => copyToClipboard(result.deeplTranslation || "", "deepl")}
-                      className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-stone-100 border border-stone-200 rounded text-[10px] text-stone-600 font-medium"
-                      title={t("copyLiteral")}
-                    >
-                      {copiedSection === "deepl" ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-600" />
-                          <span>{t("copied")}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>{t("copyLiteral")}</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* Korean theological translation block */}
               <div className="bg-amber-50/30 border border-amber-100/50 rounded-xl p-5 relative group flex flex-col justify-between">

@@ -24,9 +24,6 @@ export interface TranslationResult {
   words: WordAnalysis[];
   sentences: SentenceComparison[];
   crossReferences?: CrossReference[];
-  deeplTranslation?: string | null;
-  deeplUsed?: boolean;
-  deeplError?: string | null;
 }
 
 export interface SavedTranslation {

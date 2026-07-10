@@ -221,29 +221,9 @@ const dictionary: Record<string, Record<UiLang, string>> = {
   },
 
   // Overview Tab Contents
-  deeplGuideTitle: {
-    en: "ℹ️ DeepL Integration Guide:",
-    ko: "ℹ️ DeepL API 연동 가이드:",
-  },
-  deeplGuideText: {
-    en: "Currently running on Google Gemini engine. You can add your DeepL API Key under the name DEEPL_API_KEY in the Settings > Secrets panel to display side-by-side DeepL high-precision literal translation and Gemini deep theological parsing.",
-    ko: "현재 구글 Gemini 모델로 주해 번역이 진행 중입니다. DeepL API 키를 우측 상단 Settings > Secrets 탭에 DEEPL_API_KEY 이름으로 등록하시면, 딥엘의 정확한 어휘 직역과 제미나이의 신학 의역을 3단 패널로 실시간 대조할 수 있습니다.",
-  },
-  deeplErrorText: {
-    en: "⚠️ DeepL API request failed. Reverting to Gemini.",
-    ko: "⚠️ DeepL API 연결에 실패하였습니다. Gemini 단독 번역으로 대체됩니다.",
-  },
   originalLabel: {
     en: "Logos Original English Text",
     ko: "로고스 영어 원문",
-  },
-  literalLabel: {
-    en: "DeepL Literal Translation",
-    ko: "DeepL 고정밀 직역",
-  },
-  deeplBadge: {
-    en: "DeepL Literal",
-    ko: "DeepL 원문직역",
   },
   contextualLabel: {
     en: "Theological Translation",
