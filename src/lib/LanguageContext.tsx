@@ -390,6 +390,10 @@ const dictionary: Record<string, Record<UiLang, string>> = {
   translationEngineDesc: {
     en: "Choose the primary translation service for direct literal translation comparison. DeepL provides high precision if configured with an API key.",
     ko: "영어에서 다른 언어로 직역할 때 사용할 주 엔진을 선택합니다. DeepL은 키를 등록했을 때 고정밀 번역을 제공합니다.",
+  },
+  adminPanel: {
+    en: "🛡️ Admin Panel",
+    ko: "🛡️ 사용자 계정 관리",
   }
 };
 

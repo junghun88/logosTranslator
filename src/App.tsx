@@ -19,7 +19,8 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
-  Trash
+  Trash,
+  Shield
 } from "lucide-react";
 import { TranslationResult, SavedTranslation } from "./types";
 import TranslationViewer from "./components/TranslationViewer";
@@ -27,6 +28,7 @@ import HistoryList from "./components/HistoryList";
 import MacShortcutGuide from "./components/MacShortcutGuide";
 import { useLanguage } from "./lib/LanguageContext";
 import AuthScreen from "./components/AuthScreen";
+import AdminPanel from "./components/AdminPanel";
 
 export default function App() {
   const { uiLang, setUiLang, t } = useLanguage();
@@ -42,6 +44,7 @@ export default function App() {
   const [history, setHistory] = useState<SavedTranslation[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Translation Engine State
   const translationEngine = "gemini";
@@ -157,6 +160,21 @@ export default function App() {
       };
     }
   }, [clientId, savedGeminiKey]);
+
+  // Handle global key updates (e.g. from Admin Panel)
+  useEffect(() => {
+    const handleGlobalKeysUpdated = () => {
+      if (currentUser) {
+        const gemini = localStorage.getItem(`logos_custom_gemini_key_${currentUser}`) || "";
+        setSavedGeminiKey(gemini);
+        setCustomGeminiKey(gemini);
+      }
+    };
+    window.addEventListener("logos_keys_updated", handleGlobalKeysUpdated);
+    return () => {
+      window.removeEventListener("logos_keys_updated", handleGlobalKeysUpdated);
+    };
+  }, [currentUser]);
 
   const handleLoginSuccess = (username: string) => {
     localStorage.setItem("logos_current_user", username);
@@ -586,6 +604,7 @@ export default function App() {
               onClick={() => {
                 setShowApiSettings(!showApiSettings);
                 if (showGuide) setShowGuide(false);
+                setShowAdminPanel(false);
               }}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                 showApiSettings 
@@ -597,11 +616,31 @@ export default function App() {
               <span>{t("personalKeysBtn")}</span>
             </button>
 
+            {/* Admin Panel Toggle */}
+            {currentUser === "logos_admin" && (
+              <button
+                onClick={() => {
+                  setShowAdminPanel(!showAdminPanel);
+                  setShowApiSettings(false);
+                  setShowGuide(false);
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                  showAdminPanel 
+                    ? "bg-amber-800 text-white shadow-sm border border-transparent" 
+                    : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200"
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>{t("adminPanel")}</span>
+              </button>
+            )}
+
             {/* Guide Toggle */}
             <button
               onClick={() => {
                 setShowGuide(!showGuide);
                 if (showApiSettings) setShowApiSettings(false);
+                setShowAdminPanel(false);
               }}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                 showGuide 
@@ -794,6 +833,26 @@ export default function App() {
               className="overflow-hidden"
             >
               <MacShortcutGuide />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Admin Panel (Visible to logos_admin only) */}
+        <AnimatePresence>
+          {showAdminPanel && currentUser === "logos_admin" && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-8"
+            >
+              <AdminPanel 
+                uiLang={uiLang} 
+                currentAdmin={currentUser}
+                onUserUpdate={() => {
+                  fetchRealtimeUsage(clientId, savedGeminiKey);
+                }}
+              />
             </motion.div>
           )}
         </AnimatePresence>
